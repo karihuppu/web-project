@@ -39,20 +39,20 @@ Harrastusjoukkueen harjoitusten ja otteluiden osallistujamääriä on vaikea seu
 
 Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmäisen käyttökelpoisen version kannalta välttämätöntä, **Should** tärkeää mutta lykättävissä olevaa ja **Could** mahdollista lisäominaisuutta.
 
-| ID | Vaatimus | Prioriteetti |
-|---|---|---|
-| FR-01 | Jäsen näkee oman joukkueensa tulevat tapahtumat aikajärjestyksessä. | Must |
-| FR-02 | Tapahtuman tiedoissa näytetään nimi, päivämäärä, alkamisaika, päättymisaika ja paikka. | Must |
-| FR-03 | Jäsen voi valita omaan osallistumiseensa tilan **Tulossa**, **En pääse** tai **En ole vastannut**. | Must |
-| FR-04 | Jäsen voi muuttaa omaa osallistumistilaansa niin kauan kuin tapahtumaa ei ole päättynyt. | Must |
-| FR-05 | Tapahtuman sivulla näkyvät osallistujat tiloittain ja kunkin tilan henkilömäärä. | Must |
-| FR-06 | Valmentaja voi luoda tapahtuman antamalla nimen, ajankohdan ja paikan. | Must |
-| FR-07 | Valmentaja voi muokata tulevan tapahtuman tietoja ja peruuttaa tapahtuman. Peruutettu tapahtuma merkitään selvästi. | Must |
-| FR-08 | Käyttäjä voi kirjautua omalla tunnuksellaan ja salasanallaan. Sovellus erottaa jäsenen ja valmentajan oikeudet. | Must |
-| FR-09 | Valmentaja voi lisätä joukkueeseen uuden jäsenen. | Should |
-| FR-10 | Jäsen voi kirjoittaa ilmoittautumisen yhteyteen lyhyen kommentin (enintään 300 merkkiä). | Should |
-| FR-11 | Käyttäjä saa sähköposti-ilmoituksen uudesta tapahtumasta. | Could |
-| FR-12 | Valmentaja voi luoda viikoittain toistuvan tapahtuman. | Could |
+| ID    | Vaatimus                                                                                                            | Prioriteetti |
+| ----- | ------------------------------------------------------------------------------------------------------------------- | ------------ |
+| FR-01 | Pystyy selaamaan elokuvia ja näkee tiedot sekä kuvat niistä.                                                        | Must         |
+| FR-02 | Tapahtuman tiedoissa näytetään nimi, päivämäärä, alkamisaika, päättymisaika ja paikka.                              | Must         |
+| FR-03 | Jäsen voi valita omaan osallistumiseensa tilan **Tulossa**, **En pääse** tai **En ole vastannut**.                  | Must         |
+| FR-04 | Jäsen voi muuttaa omaa osallistumistilaansa niin kauan kuin tapahtumaa ei ole päättynyt.                            | Must         |
+| FR-05 | Tapahtuman sivulla näkyvät osallistujat tiloittain ja kunkin tilan henkilömäärä.                                    | Must         |
+| FR-06 | Valmentaja voi luoda tapahtuman antamalla nimen, ajankohdan ja paikan.                                              | Must         |
+| FR-07 | Valmentaja voi muokata tulevan tapahtuman tietoja ja peruuttaa tapahtuman. Peruutettu tapahtuma merkitään selvästi. | Must         |
+| FR-08 | Käyttäjä voi kirjautua omalla tunnuksellaan ja salasanallaan. Sovellus erottaa jäsenen ja valmentajan oikeudet.     | Must         |
+| FR-09 | Valmentaja voi lisätä joukkueeseen uuden jäsenen.                                                                   | Should       |
+| FR-10 | Jäsen voi kirjoittaa ilmoittautumisen yhteyteen lyhyen kommentin (enintään 300 merkkiä).                            | Should       |
+| FR-11 | Käyttäjä saa sähköposti-ilmoituksen uudesta tapahtumasta.                                                           | Could        |
+| FR-12 | Valmentaja voi luoda viikoittain toistuvan tapahtuman.                                                              | Could        |
 
 ### 4.1 Tarkemmat hyväksymiskriteerit: FR-03 (ilmoittautuminen)
 
