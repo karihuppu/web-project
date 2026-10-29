@@ -1,8 +1,8 @@
 # Vaatimusmäärittely: Joukkuehuuto
 
 **Versio:** 1.0 (esimerkki)  
-**Päivämäärä:** 26.10.2026  
-**Laatija:** Esimerkkiprojektiryhmä  
+**Päivämäärä:** 29.10.2026  
+**Laatija:** Ryhmä 13  
 **Tila:** Esimerkkidokumentti – ei oikean asiakkaan hyväksymä
 
 > Tämä on kuvitteellisen, Nimenhuuto-tyyppisen sovelluksen vaatimusmäärittely opiskelijoille. Vaatimukset ja prioriteetit ovat esimerkin vuoksi tehtyjä oletuksia, eivät Nimenhuuto-palvelun todellisia ominaisuuksia tai asiakkaan päätöksiä.
