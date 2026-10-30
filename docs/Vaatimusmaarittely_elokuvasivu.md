@@ -49,9 +49,11 @@ Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmä
 | FR-07 | Käyttäjä voi luoda julkisen tai yksityisen ryhmän, jossa voi lisätä ja poistaa henkilöitä              | Must         |
 | FR-08 | Sivu toimii myös puhelimella                                                                           | Must         |
 | FR-09 | Käyttäjä voi hakea elokuvia genreittäin                                                                | Should       |
-| FR-10 | Jäsen voi kirjoittaa ilmoittautumisen yhteyteen lyhyen kommentin (enintään 300 merkkiä).               | Should       |
-| FR-11 | Käyttäjä saa sähköposti-ilmoituksen uudesta tapahtumasta.                                              | Could        |
-| FR-12 | Valmentaja voi luoda viikoittain toistuvan tapahtuman.                                                 | Could        |
+| FR-10 | Käyttäjä voi jakaa toivelistan, jonka toinen käyttäjä voi tallentaa                                    | Should       |
+| FR-11 | Käyttäjä näkee muiden ryhmän jäsenten arvostelut elokuvista                                            | Should       |
+| FR-12 | Käyttäjät voivat viestitellä ryhmissä                                                                  | Should       |
+| FR-13 | Käyttäjä voi hakea ryhmiä ja liittyä tai pyytää liittymistä siihen                                     | Should       |
+| FR-14 | Sivu näyttää, missä elokuvateattereissa elokuva pyörii                                                 | Could        |
 
 ### 4.1 Tarkemmat hyväksymiskriteerit: FR-03 (ilmoittautuminen)
 
@@ -130,13 +132,13 @@ Vaatimusta ei merkitä valmiiksi vain siksi, että se toimii kehittäjän omalla
 
 ## 10. Avoimet kysymykset ja oletukset
 
-| ID | Kysymys asiakkaalle | Tila |
-|---|---|---|
-| Q-01 | Saako jäsen nähdä kaikkien osallistumistilat vai vain osallistujien määrät? | Avoin |
-| Q-02 | Voiko valmentaja muuttaa jäsenen ilmoittautumista hänen puolestaan? | Avoin |
-| Q-03 | Pitääkö jäsenen pystyä ilmoittautumaan ilman käyttäjätiliä? | Avoin |
-| Q-04 | Näytetäänkö menneet tapahtumat ja kuinka kauan niitä säilytetään? | Avoin |
-| Q-05 | Voiko joukkueessa olla useita valmentajia? | Avoin |
+| ID   | Kysymys asiakkaalle                                                                              | Tila  |
+| ---- | ------------------------------------------------------------------------------------------------ | ----- |
+| Q-01 | Saako ylläpitäjä nähdä kaikkien ryhmän jäsenten osallistumistilat vai vain osallistujien määrät? | Avoin |
+| Q-02 | Voiko ryhmän ylläpitäjä muuttaa jäsenen ... hänen puolestaan?                                    | Avoin |
+| Q-03 | Pitääkö jäsenen pystyä liittymään ryhmään ilman käyttäjätiliä?                                   | Avoin |
+| Q-04 | Näytetäänkö menneet tapahtumat ja kuinka kauan niitä säilytetään?                                | Avoin |
+| Q-05 | Voiko ryhmässä olla useita ylläpitäjiä?                                                          | Avoin |
 
 **Oletukset, jotka pitää varmistaa:** ensimmäinen versio tukee vain yhtä joukkuetta; ilmoittautuminen sulkeutuu tapahtuman päätyttyä; sähköposti-ilmoitukset eivät ole MVP:n välttämätön osa.
 
