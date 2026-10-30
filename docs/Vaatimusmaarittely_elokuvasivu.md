@@ -1,11 +1,10 @@
-# Vaatimusmäärittely: Joukkuehuuto
+# Vaatimusmäärittely: Elokuvasivu
 
-**Versio:** 1.0 (esimerkki)
-**Päivämäärä:** 29.10.2026  
+**Versio:** 1.0
+**Päivämäärä:** 30.10.2026  
 **Laatija:** Ryhmä 13  
-**Tila:** Esimerkkidokumentti – ei oikean asiakkaan hyväksymä
+**Tila:** Keskeneräinen dokumentti
 
-> Tämä on kuvitteellisen, Nimenhuuto-tyyppisen sovelluksen vaatimusmäärittely opiskelijoille. Vaatimukset ja prioriteetit ovat esimerkin vuoksi tehtyjä oletuksia, eivät Nimenhuuto-palvelun todellisia ominaisuuksia tai asiakkaan päätöksiä.
 
 ## 1. Tausta ja tavoite
 
@@ -20,10 +19,10 @@ Harrastusjoukkueen harjoitusten ja otteluiden osallistujamääriä on vaikea seu
 
 ## 2. Käyttäjät ja roolit
 
-| Rooli | Tarve | Oikeudet |
-|---|---|---|
-| Joukkueen jäsen | Nähdä tapahtumat ja ilmoittaa osallistumisensa | Katsella oman joukkueensa tapahtumia; muuttaa omaa ilmoittautumistaan |
-| Valmentaja / ylläpitäjä | Suunnitella tapahtumat ja tarkistaa osallistujamäärät | Jäsenen oikeuksien lisäksi luoda, muokata ja peruuttaa tapahtumia |
+| Rooli                   | Tarve                                                 | Oikeudet                                                              |
+| ----------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- |
+| Joukkueen jäsen         | Nähdä tapahtumat ja ilmoittaa osallistumisensa        | Katsella oman joukkueensa tapahtumia; muuttaa omaa ilmoittautumistaan |
+| Valmentaja / ylläpitäjä | Suunnitella tapahtumat ja tarkistaa osallistujamäärät | Jäsenen oikeuksien lisäksi luoda, muokata ja peruuttaa tapahtumia     |
 
 **Esimerkin rajaus:** Sovellus palvelee aluksi yhtä joukkuetta. Käyttäjätunnukset luodaan alkuvaiheessa ylläpitäjän toimesta. Monen joukkueen tuki on jatkokehitysidea.
 
@@ -39,20 +38,20 @@ Harrastusjoukkueen harjoitusten ja otteluiden osallistujamääriä on vaikea seu
 
 Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmäisen käyttökelpoisen version kannalta välttämätöntä, **Should** tärkeää mutta lykättävissä olevaa ja **Could** mahdollista lisäominaisuutta.
 
-| ID    | Vaatimus                                                                                                            | Prioriteetti |
-| ----- | ------------------------------------------------------------------------------------------------------------------- | ------------ |
-| FR-01 | Pystyy selaamaan elokuvia ja näkee tiedot sekä kuvat niistä.                                                        | Must         |
-| FR-02 | Tapahtuman tiedoissa näytetään nimi, päivämäärä, alkamisaika, päättymisaika ja paikka.                              | Must         |
-| FR-03 | Jäsen voi valita omaan osallistumiseensa tilan **Tulossa**, **En pääse** tai **En ole vastannut**.                  | Must         |
-| FR-04 | Jäsen voi muuttaa omaa osallistumistilaansa niin kauan kuin tapahtumaa ei ole päättynyt.                            | Must         |
-| FR-05 | Tapahtuman sivulla näkyvät osallistujat tiloittain ja kunkin tilan henkilömäärä.                                    | Must         |
-| FR-06 | Valmentaja voi luoda tapahtuman antamalla nimen, ajankohdan ja paikan.                                              | Must         |
-| FR-07 | Valmentaja voi muokata tulevan tapahtuman tietoja ja peruuttaa tapahtuman. Peruutettu tapahtuma merkitään selvästi. | Must         |
-| FR-08 | Käyttäjä voi kirjautua omalla tunnuksellaan ja salasanallaan. Sovellus erottaa jäsenen ja valmentajan oikeudet.     | Must         |
-| FR-09 | Valmentaja voi lisätä joukkueeseen uuden jäsenen.                                                                   | Should       |
-| FR-10 | Jäsen voi kirjoittaa ilmoittautumisen yhteyteen lyhyen kommentin (enintään 300 merkkiä).                            | Should       |
-| FR-11 | Käyttäjä saa sähköposti-ilmoituksen uudesta tapahtumasta.                                                           | Could        |
-| FR-12 | Valmentaja voi luoda viikoittain toistuvan tapahtuman.                                                              | Could        |
+| ID    | Vaatimus                                                                                               | Prioriteetti |
+| ----- | ------------------------------------------------------------------------------------------------------ | ------------ |
+| FR-01 | Käyttäjä voi hakea elokuvia                                                                            | Must         |
+| FR-02 | Sivu näyttää etusivulla ajankohtaisia elokuvia (uusin, suosituin kk)                                   | Must         |
+| FR-03 | Elokuvista näkee tiedot ja kuvat                                                                       | Must         |
+| FR-04 | Käyttäjä voi luoda ja poistaa tilin sekä muokata nimimerkkiä                                           | Must         |
+| FR-05 | Käyttäjä voi tehdä ja poistaa toivelistan, jossa voi lisätä ja poistaa elokuvia                        | Must         |
+| FR-06 | Ei kirjautunut käyttäjä voi arvioida elokuvia (1-5 tähteä) ja kirjautunut voi lisäksi lisätä kommentin | Must         |
+| FR-07 | Käyttäjä voi luoda julkisen tai yksityisen ryhmän, jossa voi lisätä ja poistaa henkilöitä              | Must         |
+| FR-08 | Sivu toimii myös puhelimella                                                                           | Must         |
+| FR-09 | Käyttäjä voi hakea elokuvia genreittäin                                                                | Should       |
+| FR-10 | Jäsen voi kirjoittaa ilmoittautumisen yhteyteen lyhyen kommentin (enintään 300 merkkiä).               | Should       |
+| FR-11 | Käyttäjä saa sähköposti-ilmoituksen uudesta tapahtumasta.                                              | Could        |
+| FR-12 | Valmentaja voi luoda viikoittain toistuvan tapahtuman.                                                 | Could        |
 
 ### 4.1 Tarkemmat hyväksymiskriteerit: FR-03 (ilmoittautuminen)
 
