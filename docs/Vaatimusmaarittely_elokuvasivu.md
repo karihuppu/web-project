@@ -1,6 +1,6 @@
 # Vaatimusmäärittely: Joukkuehuuto
 
-**Versio:** 1.0 (esimerkki)  
+**Versio:** 1.0 (esimerkki)
 **Päivämäärä:** 29.10.2026  
 **Laatija:** Ryhmä 13  
 **Tila:** Esimerkkidokumentti – ei oikean asiakkaan hyväksymä
