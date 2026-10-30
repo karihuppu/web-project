@@ -135,7 +135,7 @@ Vaatimusta ei merkitä valmiiksi vain siksi, että se toimii kehittäjän omalla
 | ID   | Kysymys asiakkaalle                                                   | Tila  |
 | ---- | --------------------------------------------------------------------- | ----- |
 | Q-01 | Pitääkö ryhmällä olla oma toivelista?                                 | Avoin |
-| Q-02 | Voiko ryhmän ylläpitäjä muuttaa jäsenen arviointeja hänen puolestaan? | Avoin |
+| Q-02 | Voiko ylläpitäjä lähettää käyttäjälle kutsun liittyä ryhmään?         | Avoin |
 | Q-03 | Pitääkö jäsenen pystyä liittymään ryhmään ilman käyttäjätiliä?        | Avoin |
 | Q-04 | Näytetäänkö menneet vanhat viestit ja kuinka kauan niitä säilytetään? | Avoin |
 | Q-05 | Voiko ryhmässä olla useita ylläpitäjiä?                               | Avoin |
