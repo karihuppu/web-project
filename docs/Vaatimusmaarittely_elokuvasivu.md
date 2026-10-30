@@ -19,10 +19,10 @@ Harrastusjoukkueen harjoitusten ja otteluiden osallistujamääriä on vaikea seu
 
 ## 2. Käyttäjät ja roolit
 
-| Rooli                   | Tarve                                                 | Oikeudet                                                              |
-| ----------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- |
-| Joukkueen jäsen         | Nähdä tapahtumat ja ilmoittaa osallistumisensa        | Katsella oman joukkueensa tapahtumia; muuttaa omaa ilmoittautumistaan |
-| Valmentaja / ylläpitäjä | Suunnitella tapahtumat ja tarkistaa osallistujamäärät | Jäsenen oikeuksien lisäksi luoda, muokata ja peruuttaa tapahtumia     |
+| Rooli             | Tarve                         | Oikeudet                                       |
+| ----------------- | ----------------------------- | ---------------------------------------------- |
+| Sivun käyttäjä    | Nähdä elokuvat ja arvioida ne | Kommentoida arviointeja elokuviin              |
+| Ryhmän ylläpitäjä | Hallinnoida ryhmää            | Poistaa ryhmässä viestejä tai jäseniä ryhmästä |
 
 **Esimerkin rajaus:** Sovellus palvelee aluksi yhtä joukkuetta. Käyttäjätunnukset luodaan alkuvaiheessa ylläpitäjän toimesta. Monen joukkueen tuki on jatkokehitysidea.
 
@@ -132,13 +132,13 @@ Vaatimusta ei merkitä valmiiksi vain siksi, että se toimii kehittäjän omalla
 
 ## 10. Avoimet kysymykset ja oletukset
 
-| ID   | Kysymys asiakkaalle                                                                              | Tila  |
-| ---- | ------------------------------------------------------------------------------------------------ | ----- |
-| Q-01 | Saako ylläpitäjä nähdä kaikkien ryhmän jäsenten osallistumistilat vai vain osallistujien määrät? | Avoin |
-| Q-02 | Voiko ryhmän ylläpitäjä muuttaa jäsenen ... hänen puolestaan?                                    | Avoin |
-| Q-03 | Pitääkö jäsenen pystyä liittymään ryhmään ilman käyttäjätiliä?                                   | Avoin |
-| Q-04 | Näytetäänkö menneet tapahtumat ja kuinka kauan niitä säilytetään?                                | Avoin |
-| Q-05 | Voiko ryhmässä olla useita ylläpitäjiä?                                                          | Avoin |
+| ID   | Kysymys asiakkaalle                                                   | Tila  |
+| ---- | --------------------------------------------------------------------- | ----- |
+| Q-01 | Pitääkö ryhmällä olla oma toivelista?                                 | Avoin |
+| Q-02 | Voiko ryhmän ylläpitäjä muuttaa jäsenen arviointeja hänen puolestaan? | Avoin |
+| Q-03 | Pitääkö jäsenen pystyä liittymään ryhmään ilman käyttäjätiliä?        | Avoin |
+| Q-04 | Näytetäänkö menneet vanhat viestit ja kuinka kauan niitä säilytetään? | Avoin |
+| Q-05 | Voiko ryhmässä olla useita ylläpitäjiä?                               | Avoin |
 
 **Oletukset, jotka pitää varmistaa:** ensimmäinen versio tukee vain yhtä joukkuetta; ilmoittautuminen sulkeutuu tapahtuman päätyttyä; sähköposti-ilmoitukset eivät ole MVP:n välttämätön osa.
 
