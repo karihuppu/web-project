@@ -103,7 +103,7 @@ Elokuvien perustiedot ja julisteet haetaan TMDB -palvelusta.
 
 **Ensimmäiseen julkaisuun (MVP) sisältyvät:** Elokuvien selaaminen ja hakeminen, käyttäjätilin luominen ja kirjautuminen tilille, elokuvien arviointi ja kommentointi, ryhmien luonti sekä ryhmän jäsenten hallinta, mobiililaitteelle mukautuva käyttöliittymä ja elokuvien tietojen hakeminen TMDB - palvelusta.
 
-**Ei toteuteta tässä kahdeksan viikon projektissa:** Maksulliset lisäpalvelut, 
+**Ei toteuteta tässä kahdeksan viikon projektissa:** Maksulliset lisäpalvelut ja tekoälyyn perustuvat elokuvasuositukset.
 
 Rajaus ja Must-prioriteetit hyväksytetään asiakkaalla. Niitä voidaan muuttaa, kun toteutuksen työmäärä tarkentuu.
 
@@ -165,7 +165,8 @@ Muutokset kirjataan dokumentin versiohistoriaan ja GitHubin backlogiin. Asiakas 
 
 ## 12. Versiohistoria
 
-| Versio | Päivä | Muutos |
-|---|---|---|
-| 0.1 | 26.10.2026 | Alustava vaatimusmäärittely |
-| 1.0 | 26.10.2026 | Opetuskäyttöön viimeistelty esimerkki (ei hyväksytty oikealla asiakkaalla) |
+| Versio | Päivä      | Muutos                                                                     |
+| ------ | ---------- | -------------------------------------------------------------------------- |
+| 0.1    | 30.10.2026 | Alustava vaatimusmäärittely                                                |
+| 0.2    | 2.11.2026  | Vaatimuksia tarkennettu ja tavoitteet lisätty.                             |
+| 1.0    | -          | Opetuskäyttöön viimeistelty esimerkki (ei hyväksytty oikealla asiakkaalla) |
