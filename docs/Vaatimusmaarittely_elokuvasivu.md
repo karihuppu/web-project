@@ -8,13 +8,13 @@
 
 ## 1. Tausta ja tavoite
 
-Harrastusjoukkueen harjoitusten ja otteluiden osallistujamääriä on vaikea seurata viestiryhmässä. Viestit hukkuvat, ilmoittautumistilanne muuttuu ja valmentaja joutuu kyselemään osallistumista erikseen.
+Elokuvaharrastajilla on usein vaikeuksia löytää kiinnostavia elokuvia. Elokuvasuosituksia ja tietoja tallennetaan muun muassa puhelimen muistiinpanoihin. Tiedot ovat usein hajallaan, joten niitä on vaikea jakaa muiden kanssa.
 
-**Tavoite:** Joukkueen jäsenet näkevät tulevat tapahtumat ja ilmoittavat osallistumisestaan. Valmentaja näkee nopeasti, montako osallistujaa on tulossa.
+**Tavoite:** Kehittää elokuvaharrastajille suunnattu verkkopalvelu, jossa käyttäjät voivat selata ja hakea elokuvia, tallentaa niitä omiin toivelistoihinsa sekä arvioida elokuvia. Palvelussa voi myös luoda ryhmiä, joissa jäsenet voivat jakaa elokuvasuosituksia ja nähdä toistensa arvosteluja.
 
 **Onnistumisen mittarit (sovittava asiakkaan kanssa):**
-- Valmentaja näkee yksittäisen tapahtuman osallistujat yhdeltä sivulta.
-- Jäsen voi ilmoittaa osallistumisensa tapahtumaan enintään kolmella toiminnolla tapahtuman avaamisesta.
+- Käyttäjä löytää elokuvan ja näkee sen keskeiset tiedot.
+- Käyttäjä pystyy luomaan tilin ja tallentamaan elokuvia omaan toivelistaansa.
 - Sovellusta voidaan käyttää puhelimen selaimessa ilman erillistä asennusta.
 
 ## 2. Käyttäjät ja roolit
