@@ -15,8 +15,8 @@ Elokuvaharrastajilla on usein vaikeuksia löytää kiinnostavia elokuvia. Elokuv
 **Onnistumisen mittarit (sovittava asiakkaan kanssa):**
 - Käyttäjä löytää elokuvan ja näkee sen keskeiset tiedot.
 - Käyttäjä pystyy luomaan tilin ja tallentamaan elokuvia omaan toivelistaansa.
-- Sovellusta voidaan käyttää puhelimen selaimessa ilman erillistä asennusta.
-
+- Kirjautunut käyttäjä pystyy arvioimaan elokuvan ja lisäämään siihen kommentin.
+- Verkkopalvelua voidaan käyttää sujuvasti myös puhelimen selaimella ilman erillistä asennusta.
 ## 2. Käyttäjät ja roolit
 
 | Rooli             | Tarve                         | Oikeudet                                       |
@@ -24,15 +24,17 @@ Elokuvaharrastajilla on usein vaikeuksia löytää kiinnostavia elokuvia. Elokuv
 | Sivun käyttäjä    | Nähdä elokuvat ja arvioida ne | Kommentoida arviointeja elokuviin              |
 | Ryhmän ylläpitäjä | Hallinnoida ryhmää            | Poistaa ryhmässä viestejä tai jäseniä ryhmästä |
 
-**Esimerkin rajaus:** Sovellus palvelee aluksi yhtä joukkuetta. Käyttäjätunnukset luodaan alkuvaiheessa ylläpitäjän toimesta. Monen joukkueen tuki on jatkokehitysidea.
+**Esimerkin rajaus:** Palvelu on tarkoitettu useille elokuvaharrastajille ja heidän muodostamilleen ryhmille. Elokuvien selaaminen ei vaadi käyttäjätiliä, mutta arvostelujen kirjoittaminen ja henkilökohtaisten listojen tallentaminen vaativat käyttäjätilin. Ryhmät voivat olla julkisia tai yksityisiä. Yksityiseen ryhmään pääseminen edellyttää kutsua tai ylläpitäjän hyväksyntää.
 
 ## 3. Käyttötilanne
 
-1. Valmentaja luo tapahtuman: *Tiistain harjoitukset*, 3.11. klo 18.00–19.30, liikuntahalli.
-2. Jäsen avaa tapahtumaluettelon, valitsee harjoitukset ja painaa **Tulossa**.
-3. Jäsenen tila näkyy tapahtuman osallistujaluettelossa.
-4. Jäsen muuttaa myöhemmin tilaksi **En pääse**.
-5. Valmentaja tarkistaa ennen harjoituksia osallistujamäärät.
+1. Käyttäjä avaa elokuvasivuston ja selaa etusivulla näkyviä ajankohtaisia sekä suosittuja elokuvia.
+2. Käyttäjä hakee elokuvaa nimellä tai selaa elokuvia esimerkiksi genren perusteella.
+3. Käyttäjä avaa elokuvan sivun ja tutustuu sen kuvaukseen ja muihin tietoihin.
+4. Käyttäjä kirjautuu sisään ja lisää elokuvan omaan toivelistaansa.
+5. Käyttäjä arvioi elokuvan ja kirjoittaa halutessaan kommentin.
+6. Käyttäjä avaa oman elokuvaryhmänsä sivun, jossa muut ryhmän jäsenet voivat nähdä hänen arvostelunsa.
+7. Ryhmän ylläpitäjä voi halutessaan lisätä ryhmään uusia jäseniä tai poistaa niitä.
 
 ## 4. Toiminnalliset vaatimukset
 
@@ -55,7 +57,7 @@ Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmä
 | FR-13 | Käyttäjä voi hakea ryhmiä ja liittyä tai pyytää liittymistä siihen                                     | Should       |
 | FR-14 | Sivu näyttää, missä elokuvateattereissa elokuva pyörii                                                 | Could        |
 
-### 4.1 Tarkemmat hyväksymiskriteerit: FR-03 (ilmoittautuminen)
+### 4.1 Tarkemmat hyväksymiskriteerit: FR-03 (Elokuvan tiedot)
 
 - **Tilanne:** kirjautunut jäsen ja tuleva tapahtuma. **Kun:** jäsen valitsee *Tulossa*. **Niin:** valittu tila tallentuu ja näkyy välittömästi tapahtuman sivulla.
 - **Kun:** sama jäsen valitsee *En pääse*. **Niin:** aikaisempi tila korvautuu uudella; jäsen ei näy kahdessa tilassa.
@@ -73,13 +75,13 @@ Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmä
 
 Numeeriset rajat ovat **esimerkkitavoitteita**, jotka tulee oikeassa projektissa sopia asiakkaan kanssa ja testata.
 
-| ID | Vaatimus | Todentaminen |
-|---|---|---|
-| NFR-01 | Tapahtumalista avautuu enintään 3 sekunnissa testattaessa 50 tapahtumalla ja 20 samanaikaisella käyttäjällä sovitussa testiympäristössä. | Suorituskykytesti |
-| NFR-02 | Sovelluksen tapahtumat ja ilmoittautumiset ovat käytettävissä 360–430 pikselin levyisellä puhelinnäytöllä ilman vaakasuuntaista vieritystä. | Käyttöliittymätesti |
-| NFR-03 | Salasanat tallennetaan vain turvallisella yksisuuntaisella salasanatiivisteellä. | Toteutuksen ja tietokannan tarkistus |
-| NFR-04 | Käyttäjä ei voi hakea tai muuttaa toisen käyttäjän tietoja ilman roolinsa mukaista oikeutta. | API:n käyttöoikeustestit |
-| NFR-05 | Sovellusta käytetään tuotantoympäristössä HTTPS-yhteydellä. | Julkaistun osoitteen tarkistus |
+| ID     | Vaatimus                                                                                                                                    | Todentaminen                         |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| NFR-01 | Etusivu ja elokuvien hakutulokset latautuvat enintään 3 sekunnissa sovitussa testiympäristössä.                                             | Suorituskykytesti                    |
+| NFR-02 | Sovelluksen tapahtumat ja ilmoittautumiset ovat käytettävissä 360–430 pikselin levyisellä puhelinnäytöllä ilman vaakasuuntaista vieritystä. | Käyttöliittymätesti                  |
+| NFR-03 | Salasanat tallennetaan vain turvallisella yksisuuntaisella salasanatiivisteellä.                                                            | Toteutuksen ja tietokannan tarkistus |
+| NFR-04 | Käyttäjä ei voi hakea tai muuttaa toisen käyttäjän tietoja ilman roolinsa mukaista oikeutta.                                                | API:n käyttöoikeustestit             |
+| NFR-05 | Sovellusta käytetään tuotantoympäristössä HTTPS-yhteydellä.                                                                                 | Julkaistun osoitteen tarkistus       |
 
 ## 6. Tiedot ja alustava tietomalli
 
