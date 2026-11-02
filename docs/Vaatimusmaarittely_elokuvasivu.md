@@ -75,29 +75,35 @@ Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmä
 
 Numeeriset rajat ovat **esimerkkitavoitteita**, jotka tulee oikeassa projektissa sopia asiakkaan kanssa ja testata.
 
-| ID     | Vaatimus                                                                                                                                    | Todentaminen                         |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| NFR-01 | Etusivu ja elokuvien hakutulokset latautuvat enintään 3 sekunnissa sovitussa testiympäristössä.                                             | Suorituskykytesti                    |
-| NFR-02 | Sovelluksen tapahtumat ja ilmoittautumiset ovat käytettävissä 360–430 pikselin levyisellä puhelinnäytöllä ilman vaakasuuntaista vieritystä. | Käyttöliittymätesti                  |
-| NFR-03 | Salasanat tallennetaan vain turvallisella yksisuuntaisella salasanatiivisteellä.                                                            | Toteutuksen ja tietokannan tarkistus |
-| NFR-04 | Käyttäjä ei voi hakea tai muuttaa toisen käyttäjän tietoja ilman roolinsa mukaista oikeutta.                                                | API:n käyttöoikeustestit             |
-| NFR-05 | Sovellusta käytetään tuotantoympäristössä HTTPS-yhteydellä.                                                                                 | Julkaistun osoitteen tarkistus       |
+| ID     | Vaatimus                                                                                                 | Todentaminen                         |
+| ------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| NFR-01 | Etusivu ja elokuvien hakutulokset latautuvat enintään 3 sekunnissa sovitussa testiympäristössä.          | Suorituskykytesti                    |
+| NFR-02 | Sovellusta voidaan käyttää 360–430 pikselin levyisellä puhelinnäytöllä ilman vaakasuuntaista vieritystä. | Käyttöliittymätesti                  |
+| NFR-03 | Salasanat tallennetaan vain turvallisella yksisuuntaisella salasanatiivisteellä.                         | Toteutuksen ja tietokannan tarkistus |
+| NFR-04 | Käyttäjä ei voi nähdä tai muuttaa muiden käyttäjien yksityisiä tietoja ilman tarvittavia oikeuksia.      | API:n käyttöoikeustestit             |
+| NFR-05 | Sovellusta käytetään tuotantoympäristössä HTTPS-yhteydellä.                                              | Julkaistun osoitteen tarkistus       |
 
 ## 6. Tiedot ja alustava tietomalli
 
 Sovellus tallentaa vähintään seuraavat tiedot:
 
-- **Käyttäjä:** tunniste, nimi, sähköposti, salasanatiiviste ja rooli.
-- **Tapahtuma:** tunniste, nimi, paikka, aloitus, lopetus, tila (aktiivinen/peruutettu) ja luoja.
-- **Ilmoittautuminen:** käyttäjän tunniste, tapahtuman tunniste, osallistumistila ja viimeisin muutosajankohta.
+- **Käyttäjä:** tunniste, nimimerkki, sähköposti, salasanatiiviste ja rooli.
+- **Elokuva:** TMDB-tunniste ja mahdolliset paikallisesti tallennettavat elokuvan tiedot.
+- **Arvostelu:** tunniste, käyttäjän tunniste, elokuvan tunniste, tähtiarvio, kommentti ja luontiajankohta.
+- **Toivelista:** tunniste, käyttäjän tunniste ja listan nimi.
+- **Toivelistan elokuva:** toivelistan tunniste ja elokuvan tunniste.
+- **Ryhmä:** tunniste, nimi, kuvaus, julkisuusasetukset ja luontiajankohta.
+- **Ryhmän jäsenyys:** käyttäjän tunniste, ryhmän tunniste ja käyttäjän rooli ryhmässä.
 
-Samalla käyttäjällä voi olla kuhunkin tapahtumaan vain yksi voimassa oleva ilmoittautuminen. Tarkempi ER-kaavio tehdään erilliseen tietokantasuunnitelmaan.
+Yhdellä käyttäjällä voi olla useita arvosteluja, mutta samalla käyttäjällä voi olla vain yksi arvostelu samasta elokuvasta.
+
+Elokuvien perustiedot ja julisteet haetaan TMDB -palvelusta.
 
 ## 7. Projektin rajaus
 
-**Ensimmäiseen julkaisuun (MVP) sisältyvät:** tapahtumien näyttäminen ja luominen, osallistumistilan tallentaminen, osallistujalista sekä tarvittavat käyttöoikeudet. Käyttöliittymän toimivuus puhelimessa ja julkaisu Azureen kuuluvat myös valmiin tuotteen vaatimuksiin.
+**Ensimmäiseen julkaisuun (MVP) sisältyvät:** Elokuvien selaaminen ja hakeminen, käyttäjätilin luominen ja kirjautuminen tilille, elokuvien arviointi ja kommentointi, ryhmien luonti sekä ryhmän jäsenten hallinta, mobiililaitteelle mukautuva käyttöliittymä ja elokuvien tietojen hakeminen TMDB - palvelusta.
 
-**Ei toteuteta tässä kahdeksan viikon projektissa:** maksut, chat, mobiilisovellus sovelluskauppaan, usean seuran hallinta, kalenterisynkronointi ja monimutkaiset tilastoraportit.
+**Ei toteuteta tässä kahdeksan viikon projektissa:** Maksulliset lisäpalvelut, 
 
 Rajaus ja Must-prioriteetit hyväksytetään asiakkaalla. Niitä voidaan muuttaa, kun toteutuksen työmäärä tarkentuu.
 
