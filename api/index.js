@@ -1,10 +1,14 @@
 import 'dotenv/config'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import errorHandler from './middleware/errorHandler.js'
 import testRouter from './routes/testRouter.js'
+import { pool } from './models/db.js'
 
-const port = process.env.PORT || 3000
+const port = Number(process.env.PORT || 3000)
+const distPath = fileURLToPath(new URL('../dist/', import.meta.url))
 
 const app = express()
 
@@ -12,29 +16,34 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
-app.use('/', testRouter)
+// Database API
+app.use('/api/tests', testRouter)
 
-// Health check endpoint for database connectivity
-app.get('/api/health', async (req, res) => {
+// Database connectivity check
+app.get('/api/health', async (_req, res) => {
   try {
-    const { pool } = await import('./models/db.js')
     await pool.query('SELECT 1')
+
     res.status(200).json({
       status: 'healthy',
       database: 'connected',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    res.status(500).json({
+    console.error('Database health check failed:', error)
+
+    res.status(503).json({
       status: 'unhealthy',
       database: 'disconnected',
-      error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
   }
 })
 
-app.use((req, res, next) => {
+// Built React application
+app.use(express.static(distPath))
+
+app.use((_req, _res, next) => {
   const error = new Error('Not found')
   error.status = 404
   next(error)
@@ -42,7 +51,6 @@ app.use((req, res, next) => {
 
 app.use(errorHandler)
 
-app.listen(port, () => {  
-  console.log(`Server is running on http://localhost:${port}`)
-  console.log('Backend hot reload is working!')
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server is listening on port ${port}`)
 })
