@@ -1,0 +1,90 @@
+name: Build and deploy Cinema to Azure
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '.obsidian/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cinema-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm --prefix api ci --omit=dev
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Package application
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/api
+          cp package.json package-lock.json release/
+          cp -R dist release/dist
+          rsync -a \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            api/ release/api/
+
+          test -f release/dist/index.html
+          test -f release/api/index.js
+          test -d release/api/node_modules/express
+          test -d release/api/node_modules/pg
+
+          cd release
+          zip -qr ../cinema-app.zip .
+
+      - name: Log in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: aleksandrcgm-cinema-app
+          package: cinema-app.zip
