@@ -222,6 +222,23 @@ Health:   http://localhost:3000/api/health
 
 ---
 
+## Tietokanta ja migraatiot
+
+Tietokannan rakenne luodaan migraatioilla (`api/db/migrations`). Kun kontit ovat käynnissä,
+aja toisessa terminaalissa (myös jokaisen `git pull`in jälkeen):
+
+```bash
+docker compose exec backend npm run db:migrate   # luo / päivittää taulut
+docker compose exec backend npm run db:seed      # demodata (voi ajaa uudelleen)
+docker compose exec backend npm run db:status    # näyttää tilanteen
+```
+
+Volyymia ei tarvitse poistaa (`docker compose down -v`) migraatioita varten.
+Rakenne, säännöt ja Azure-ohjeet: [docs/tietokanta.md](docs/tietokanta.md).
+API-rajapinnat: [docs/api.md](docs/api.md).
+
+---
+
 ## Check container status
 
 Open another terminal in the project directory and run:
