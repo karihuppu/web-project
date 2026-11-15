@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import "./App.css";
+import { AuthNav, LoginPage, RegisterPage, AccountPage } from "./auth/AuthPages";
 
 const PAGE_SIZE = 12;
 const api = axios.create({
@@ -531,12 +532,19 @@ function App() {
             <Link href="/" navigate={go} className="header-link">
               Elokuvat →
             </Link>
+            <AuthNav navigate={go} />
           </nav>
         </div>
       </header>
       <main id="main" className="container">
         {url.pathname === "/" ? (
           <Catalogue params={url.searchParams} navigate={go} />
+        ) : url.pathname === "/login" ? (
+          <LoginPage navigate={go} />
+        ) : url.pathname === "/register" ? (
+          <RegisterPage navigate={go} />
+        ) : url.pathname === "/account" ? (
+          <AccountPage navigate={go} />
         ) : movieRoute ? (
           <MoviePage
             movieId={movieRoute[1]}

@@ -1,0 +1,89 @@
+import { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
+
+
+const http = axios.create({
+  baseURL: import.meta.env.PROD
+    ? ""
+    : (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/+$/, ""),
+  timeout: 15000,
+});
+
+const TOKEN_KEY = "token";
+
+const MESSAGES = {
+  400: "Tarkista syöttämäsi tiedot.",
+  401: "Väärä sähköposti tai salasana.",
+  404: "Palvelin ei löytänyt osoitetta. Onko backendin kirjautumisreitti jo valmis?",
+  409: "Tällä sähköpostilla on jo tili.",
+  500: "Palvelimella tapahtui virhe. Yritä hetken päästä uudelleen.",
+};
+
+const makeError = (message, status, fieldErrors = {}) =>
+  Object.assign(new Error(message), { status, fieldErrors });
+
+async function request(path, { method = "GET", body, auth = false } = {}) {
+  const token = localStorage.getItem(TOKEN_KEY);
+  try {
+    const { data } = await http.request({
+      url: `/api/auth${path}`,
+      method,
+      data: body,
+      headers: auth && token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return data;
+  } catch (error) {
+    if (!error.response) throw makeError("Palvelimeen ei saatu yhteyttä. Tarkista verkkoyhteys.", 0);
+    const { status, data } = error.response;
+    const text = [data?.message, data?.error].find((v) => typeof v === "string");
+    const fields =
+      data?.errors && typeof data.errors === "object" && !Array.isArray(data.errors) ? data.errors : {};
+    throw makeError(text || MESSAGES[status] || "Jokin meni pieleen. Yritä uudelleen.", status, fields);
+  }
+}
+
+async function getMe() {
+  const data = await request("/me", { auth: true });
+  return data.user ?? data;
+}
+
+
+const AuthContext = createContext(null);
+export const useAuth = () => useContext(AuthContext);
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(() => !!localStorage.getItem(TOKEN_KEY));
+
+  useEffect(() => {
+    if (!localStorage.getItem(TOKEN_KEY)) return;
+    getMe()
+      .then(setUser)
+      .catch((err) => {
+        if (err.status === 401) localStorage.removeItem(TOKEN_KEY); 
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const login = async (email, password) => {
+    const { token, user } = await request("/login", { method: "POST", body: { email, password } });
+    localStorage.setItem(TOKEN_KEY, token);
+    setUser(user ?? (await getMe()));
+  };
+
+  const register = async (email, nickname, password) => {
+    await request("/register", { method: "POST", body: { email, nickname, password } });
+    await login(email, password);
+  };
+
+  const logout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
