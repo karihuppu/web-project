@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import "./App.css";
 import { AuthNav, LoginPage, RegisterPage, AccountPage } from "./auth/AuthPages";
+import MyReview from "./reviews/MyReview";
 
 const PAGE_SIZE = 12;
 const api = axios.create({
@@ -428,6 +429,17 @@ function Reviews({ movieId }) {
 
 function MoviePage({ movieId, navigate, backHref }) {
   const movie = useApi(`/api/movies/${movieId}`);
+  // After the user's own review changes: shift the count and reload the public list
+  // (a new key remounts <Reviews>, which also returns it to the first page).
+  const [reviewChanges, setReviewChanges] = useState({ movieId, delta: 0, version: 0 });
+  const changes =
+    reviewChanges.movieId === movieId ? reviewChanges : { movieId, delta: 0, version: 0 };
+  const onReviewChanged = (delta) =>
+    setReviewChanges({
+      movieId,
+      delta: changes.delta + delta,
+      version: changes.version + 1,
+    });
   return (
     <div className="movie-page">
       <Link href={backHref} navigate={navigate} className="text-link back-link">
@@ -483,7 +495,7 @@ function MoviePage({ movieId, navigate, backHref }) {
                 </div>
                 <div>
                   <dt>Arvostelut sivustolla</dt>
-                  <dd>{movie.data.review_count}</dd>
+                  <dd>{Math.max(0, movie.data.review_count + changes.delta)}</dd>
                 </div>
               </dl>
               <a
@@ -496,7 +508,8 @@ function MoviePage({ movieId, navigate, backHref }) {
               </a>
             </div>
           </section>
-          <Reviews key={movieId} movieId={movieId} />
+          <MyReview key={movieId} movieId={movieId} navigate={navigate} onChanged={onReviewChanged} />
+          <Reviews key={`${movieId}:${changes.version}`} movieId={movieId} />
         </>
       )}
     </div>

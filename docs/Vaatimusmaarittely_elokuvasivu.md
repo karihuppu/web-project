@@ -60,9 +60,9 @@ Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmä
 | FR-01 | #1 | Käyttäjä voi hakea elokuvia | Must | Osittain: haku nimellä omasta tietokannasta, TMDB-haku puuttuu |
 | FR-02 | #2 | Etusivulla näkyy ajankohtaisia elokuvia (uusimmat sekä kuukauden suosituimmat TMDB:n mukaan) | Must | Osittain: uusimmat julkaisupäivän mukaan, suosituimmat puuttuvat |
 | FR-03 | #3 | Elokuvista näkee tiedot ja kuvat | Must | Osittain: tiedot näkyvät, julisteet odottavat TMDB-integraatiota |
-| FR-04 | #4 | Käyttäjä voi luoda ja poistaa tilin sekä muokata nimimerkkiä; käyttäjä voi kirjautua sisään ja ulos | Must | Tietokanta valmis, toiminto ei aloitettu |
+| FR-04 | #4 | Käyttäjä voi luoda ja poistaa tilin sekä muokata nimimerkkiä; käyttäjä voi kirjautua sisään ja ulos | Must | Osittain (16.11.): rekisteröinti, kirjautuminen ja uloskirjautuminen toteutettu; tilin poisto ja nimimerkin muokkaus puuttuvat |
 | FR-05 | #5 | Käyttäjä voi tehdä ja poistaa toivelistan sekä lisätä ja poistaa siinä elokuvia | Must | Tietokanta valmis, toiminto ei aloitettu |
-| FR-06 | #6 | Kirjautunut käyttäjä voi arvioida elokuvan (1–5 tähteä) ja lisätä kommentin ¹ | Must | Arvostelujen luku toimii, kirjoitus puuttuu |
+| FR-06 | #6 | Kirjautunut käyttäjä voi arvioida elokuvan (1–5 tähteä) ja lisätä kommentin ¹ | Must | Toteutettu kirjautuneille (16.11.): luonti, muokkaus ja poisto; valmis julkaisuun, Azure-tarkistus kesken |
 | FR-07 | #7 | Käyttäjä voi luoda julkisen tai yksityisen ryhmän sekä lisätä ja poistaa siinä henkilöitä | Must | Tietokanta valmis, toiminto ei aloitettu |
 | FR-08 | #8 | Sivu toimii myös puhelimella | Must | Mukautuva ulkoasu tehty, mittaus puuttuu |
 | FR-09 | #9 | Käyttäjä voi hakea elokuvia genreittäin | Should | Toimii omalla datalla |
