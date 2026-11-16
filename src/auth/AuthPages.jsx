@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "./useAuth";
 import "./auth.css";
 
 
@@ -89,7 +89,7 @@ function useRedirectWhenLoggedIn(navigate) {
   const { user } = useAuth();
   useEffect(() => {
     if (user) navigate("/");
-  }, [user]); 
+  }, [user, navigate]);
 }
 
 
@@ -160,7 +160,7 @@ export function AccountPage({ navigate }) {
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
-  }, [loading, user]); 
+  }, [loading, user, navigate]);
 
   if (loading) return <p className="auth-loading">Ladataan…</p>;
   if (!user) return null;
