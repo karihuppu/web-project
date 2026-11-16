@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { AuthContext } from "./useAuth";
+import { AuthContext, TOKEN_KEY } from "./useAuth";
 
 
 const http = axios.create({
@@ -9,8 +9,6 @@ const http = axios.create({
     : (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/+$/, ""),
   timeout: 15000,
 });
-
-const TOKEN_KEY = "token";
 
 const MESSAGES = {
   400: "Tarkista syöttämäsi tiedot.",

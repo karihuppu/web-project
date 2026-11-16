@@ -16,6 +16,11 @@ const CONSTRAINT_FIELDS = {
   users_nickname_lower_uq: { nickname: 'Nimimerkki on jo käytössä.' },
 }
 
+// Unique constraints with a user-facing message of their own.
+const CONSTRAINT_MESSAGES = {
+  reviews_user_movie_uq: 'Olet jo arvioinut tämän elokuvan. Voit muokata arviotasi.',
+}
+
 const errorHandler = (err, _req, res, _next) => {
   const pgError = PG_ERRORS[err.code]
   const status = pgError?.status ?? (Number.isInteger(err.status) ? err.status : 500)
@@ -26,7 +31,10 @@ const errorHandler = (err, _req, res, _next) => {
   }
 
   const error = {
-    message: pgError?.message ?? (status >= 500 && !err.expose ? 'Internal server error' : err.message),
+    message:
+      (pgError && CONSTRAINT_MESSAGES[err.constraint]) ??
+      pgError?.message ??
+      (status >= 500 && !err.expose ? 'Internal server error' : err.message),
     status,
   }
   // Constraint name (e.g. users_email_lower_uq) lets the frontend show a precise message.
