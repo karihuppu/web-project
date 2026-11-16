@@ -72,6 +72,8 @@ jobs:
           test -f release/api/index.js
           test -d release/api/node_modules/express
           test -d release/api/node_modules/pg
+          test -d release/api/node_modules/bcryptjs
+          test -d release/api/node_modules/jsonwebtoken
 
           cd release
           zip -qr ../cinema-app.zip .

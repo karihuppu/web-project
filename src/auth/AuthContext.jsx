@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
+import { AuthContext } from "./useAuth";
 
 
 const http = axios.create({
@@ -14,9 +15,10 @@ const TOKEN_KEY = "token";
 const MESSAGES = {
   400: "Tarkista syöttämäsi tiedot.",
   401: "Väärä sähköposti tai salasana.",
-  404: "Palvelin ei löytänyt osoitetta. Onko backendin kirjautumisreitti jo valmis?",
-  409: "Tällä sähköpostilla on jo tili.",
+  404: "Palvelua ei löytynyt. Yritä hetken päästä uudelleen.",
+  409: "Sähköposti tai nimimerkki on jo käytössä.",
   500: "Palvelimella tapahtui virhe. Yritä hetken päästä uudelleen.",
+  503: "Kirjautuminen ei ole juuri nyt käytettävissä.",
 };
 
 const makeError = (message, status, fieldErrors = {}) =>
@@ -35,9 +37,15 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
   } catch (error) {
     if (!error.response) throw makeError("Palvelimeen ei saatu yhteyttä. Tarkista verkkoyhteys.", 0);
     const { status, data } = error.response;
-    const text = [data?.message, data?.error].find((v) => typeof v === "string");
+    // Backend format: { error: { message, status, fields? } }
+    const apiError = data?.error && typeof data.error === "object" ? data.error : null;
+    const text =
+      status >= 500 && status !== 503
+        ? null
+        : [apiError?.message, data?.message, data?.error].find((v) => typeof v === "string");
+    const rawFields = apiError?.fields ?? data?.errors;
     const fields =
-      data?.errors && typeof data.errors === "object" && !Array.isArray(data.errors) ? data.errors : {};
+      rawFields && typeof rawFields === "object" && !Array.isArray(rawFields) ? rawFields : {};
     throw makeError(text || MESSAGES[status] || "Jokin meni pieleen. Yritä uudelleen.", status, fields);
   }
 }
@@ -47,9 +55,6 @@ async function getMe() {
   return data.user ?? data;
 }
 
-
-const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -72,8 +77,14 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (email, nickname, password) => {
-    await request("/register", { method: "POST", body: { email, nickname, password } });
-    await login(email, password);
+    // Backend returns { token, user } right away, so no second request is needed.
+    const data = await request("/register", { method: "POST", body: { email, nickname, password } });
+    if (data?.token) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      setUser(data.user ?? (await getMe()));
+    } else {
+      await login(email, password);
+    }
   };
 
   const logout = () => {
