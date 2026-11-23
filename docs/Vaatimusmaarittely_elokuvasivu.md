@@ -1,7 +1,7 @@
 # Vaatimusmäärittely: Elokuvasivu
 
-**Versio:** 0.3
-**Päivämäärä:** 9.11.2026
+**Versio:** 0.4
+**Päivämäärä:** 23.11.2026
 **Laatija:** Ryhmä 13
 **Tila:** Elokuvapalvelu
 
@@ -60,7 +60,7 @@ Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmä
 | FR-01 | #1 | Käyttäjä voi hakea elokuvia | Must | Osittain: haku nimellä omasta tietokannasta, TMDB-haku puuttuu |
 | FR-02 | #2 | Etusivulla näkyy ajankohtaisia elokuvia (uusimmat sekä kuukauden suosituimmat TMDB:n mukaan) | Must | Osittain: uusimmat julkaisupäivän mukaan, suosituimmat puuttuvat |
 | FR-03 | #3 | Elokuvista näkee tiedot ja kuvat | Must | Osittain: tiedot näkyvät, julisteet odottavat TMDB-integraatiota |
-| FR-04 | #4 | Käyttäjä voi luoda ja poistaa tilin sekä muokata nimimerkkiä; käyttäjä voi kirjautua sisään ja ulos | Must | Osittain (16.11.): rekisteröinti, kirjautuminen ja uloskirjautuminen toteutettu; tilin poisto ja nimimerkin muokkaus puuttuvat |
+| FR-04 | #4 | Käyttäjä voi luoda ja poistaa tilin sekä muokata nimimerkkiä; käyttäjä voi kirjautua sisään ja ulos | Must | Toteutettu (23.11.): rekisteröinti, kirjautuminen, uloskirjautuminen, nimimerkin muutos ja tilin poisto salasanalla; testattu paikallisesti, Azure-tarkistus kesken |
 | FR-05 | #5 | Käyttäjä voi tehdä ja poistaa toivelistan sekä lisätä ja poistaa siinä elokuvia | Must | Tietokanta valmis, toiminto ei aloitettu |
 | FR-06 | #6 | Kirjautunut käyttäjä voi arvioida elokuvan (1–5 tähteä) ja lisätä kommentin ¹ | Must | Toteutettu kirjautuneille (16.11.): luonti, muokkaus ja poisto; valmis julkaisuun, Azure-tarkistus kesken |
 | FR-07 | #7 | Käyttäjä voi luoda julkisen tai yksityisen ryhmän sekä lisätä ja poistaa siinä henkilöitä | Must | Tietokanta valmis, toiminto ei aloitettu |
@@ -195,3 +195,4 @@ Muutokset kirjataan dokumentin versiohistoriaan ja GitHubin backlogiin. Asiakas 
 | 0.1 | 30.10.2026 | Alustava vaatimusmäärittely |
 | 0.2 | 2.11.2026 | Vaatimuksia tarkennettu ja tavoitteet lisätty |
 | 0.3 | 9.11.2026 | Projektiryhmä lisätty; roolit tarkennettu; FR-06 tarkennettu (Q-06); vaatimuksiin issue-numerot ja toteutuksen tila; hyväksymiskriteerit 4.1–4.2 kirjoitettu tälle projektille; tietomalli päivitetty toteutuksen mukaiseksi; NFR-06 lisätty; viikkosuunnitelma päivitetty; avoimet kysymykset Q-06–Q-09 lisätty |
+| 0.4 | 23.11.2026 | Toteutuksen tila päivitetty: FR-04 (nimimerkin muutos, tilin poisto) ja FR-06 (arvostelujen kirjoitus); Q-08 ja Q-09 toteutettu tietokannassa tiimin ehdotuksen mukaisesti, asiakkaan vahvistus puuttuu |

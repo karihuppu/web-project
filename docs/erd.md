@@ -1,6 +1,6 @@
 # ERD – tietokannan rakenne
 
-**Lähde:** migraatiot [001_users_movies_reviews.sql](../api/db/migrations/001_users_movies_reviews.sql) ja [002_watchlists_groups.sql](../api/db/migrations/002_watchlists_groups.sql), commit `e75678029267515888ea39b5e557dcfcac5db933`.
+**Lähde:** migraatiot [001_users_movies_reviews.sql](../api/db/migrations/001_users_movies_reviews.sql), [002_watchlists_groups.sql](../api/db/migrations/002_watchlists_groups.sql) ja [003_group_admin_concurrency.sql](../api/db/migrations/003_group_admin_concurrency.sql) (haara `feature/account`, 23.11.2026). Migraatio 003 muuttaa vain triggereitä; taulut ja sarakkeet ovat samat kuin 002:n jälkeen.
 
 > Kaavio on piirretty **lähdekoodin perusteella**. Azuren `cinema_db`:tä ei ole tarkistettu: ei tiedetä, onko migraatiot ajettu siellä. Rakenne on tarkistettu ajamalla migraatiot väliaikaiseen paikalliseen PostgreSQL 18.6 -kantaan.
 
@@ -139,25 +139,32 @@ Sivusto näyttää toistaiseksi TMDB-keskiarvon. Omista arvosteluista ei lasketa
 
 Tulos: arvosana säilyy, kommentti häviää ja API näyttää tekijäksi `author: null` ("Poistettu käyttäjä").
 
-### Ryhmien triggerit
-- `groups_add_creator_as_admin` (`AFTER INSERT ON groups`): jos `created_by` on annettu, luoja lisätään `group_members`-tauluun roolilla `admin`. Jos `created_by` on `NULL`, ryhmä jää ilman adminia.
-- `group_members_keep_admin` (`AFTER DELETE OR UPDATE OF role`, vain kun `OLD.role = 'admin'`):
-  - lukitsee ryhmän rivin (`SELECT … FOR UPDATE`);
+### Ryhmien triggerit (migraation 003 jälkeen)
+- `groups_add_creator_as_admin` (`AFTER INSERT ON groups`): luoja lisätään `group_members`-tauluun roolilla `admin`. Ryhmää ei voi luoda ilman `created_by`-arvoa (`23502`).
+- `group_members_keep_admin` (`AFTER DELETE OR UPDATE OF role`, **kaikille** riveille):
+  - lukitsee ryhmän rivin (`SELECT … FOR UPDATE`), joten saman ryhmän muutokset käsitellään vuorotellen;
   - jos jokin admin on jäljellä → ei tehdä mitään;
   - `UPDATE` (alentaminen): virhe `23514`, viimeistä adminia ei voi alentaa;
-  - `DELETE`: pisimpään ollut jäsen (`joined_at`, sitten `user_id`) nostetaan adminiksi; jos jäseniä ei ole, ryhmä poistetaan.
+  - `DELETE`: pisimpään ollut jäsen (`joined_at`, tasatilanteessa pienempi `user_id`) lukitaan ja nostetaan adminiksi; jos valittu rivi katosi rinnakkain, valinta toistetaan; jos jäseniä ei ole, ryhmä poistetaan (myös tavallisen jäsenen lähtiessä viimeisenä).
+- `group_members_keys_fixed` (`BEFORE UPDATE OF group_id, user_id`): jäsenyyttä ei siirretä toiseen ryhmään tai käyttäjälle (`23514`).
 
-### Rinnakkaisuus: mitä triggerit eivät takaa
-Testattu kahdella yhtäaikaisella yhteydellä (väliaikainen paikallinen kanta, ei Azure):
+### Rinnakkaisuus
+Migraatio 002:n trigger saattoi jättää ryhmän ilman adminia tai tyhjäksi kahden yhtäaikaisen poiston jälkeen.
+Migraatio 003 korjaa tämän. Testattu kahdella itsenäisellä yhteydellä ([concurrency.test.js](../api/tests/concurrency.test.js), väliaikainen paikallinen kanta):
 
-| Skenaario | Tulos |
-| --- | --- |
-| Tavallinen jäsen ja viimeinen admin eroavat yhtä aikaa | ❌ ryhmä voi jäädä **ilman adminia**: valittu seuraaja ehti kadota, `UPDATE` päivitti 0 riviä |
-| Viimeinen jäsen ja viimeinen admin eroavat yhtä aikaa | ❌ **tyhjä ryhmä jää** |
-| Kaksi adminia eroaa yhtä aikaa (READ COMMITTED) | ✅ ryhmä poistetaan oikein |
-| Sama, REPEATABLE READ | ❌ tyhjä ryhmä jää (vanha snapshot) |
+| Skenaario | 002 | 003 |
+| --- | --- | --- |
+| Tavallinen jäsen ja viimeinen admin eroavat yhtä aikaa (molemmat järjestykset) | ❌ ryhmä ilman adminia | ✅ jäljellä oleva jäsen adminiksi |
+| Viimeinen jäsen ja viimeinen admin eroavat yhtä aikaa (molemmat järjestykset) | ❌ tyhjä ryhmä jää | ✅ ryhmä poistetaan |
+| Kaksi adminia eroaa yhtä aikaa | ✅ | ✅ |
+| Kaksi adminia alentaa toisensa yhtä aikaa | – | ✅ toinen saa `23514`, yksi admin jää |
+| Tilin poisto ja jäsenen lähtö samasta ryhmästä | – | ✅ ei deadlockia, säännöt pitävät |
+| REPEATABLE READ / SERIALIZABLE | ❌ tyhjä ryhmä jää | ✅ trigger kieltäytyy (`40001`) |
 
-Syy: vain adminin poisto lukitsee ryhmän; tavallisen jäsenen poisto ei. Lisäksi lukitusjärjestys on `group_members` → `groups` jäsenyyden poistossa, mutta `groups` → `group_members` ryhmän poistossa. Tämä voi aiheuttaa deadlockin; sitä ei toistettu, se on analyysi. Korjausehdotus: [implementation-review.md, kohta 3](implementation-review.md#rinnakkaisuusvirheet-ryhmätriggerissä-vahvistettu). Ryhmiä ei vielä käytetä API:ssa.
+**Takuun rajat:** säännöt pitävät READ COMMITTED -tasolla (PostgreSQL:n ja node-postgresin oletus). Lukitusjärjestys on
+`groups` → `users` → `group_members`. Jos jokin transaktio muuttaa jäsenyyksiä lukitsematta ryhmää ensin (esim. käsin
+DBeaverissa), PostgreSQL voi katkaista deadlockin (`40P01`, API vastaa 503); data ei silloinkaan riko sääntöjä.
+`TRUNCATE` ohittaa rivitriggerit, eikä sitä käytetä sovelluksessa. Ohjeet ryhmien toteuttajalle: [ryhmat-kehittajalle.md](ryhmat-kehittajalle.md).
 
 ### Indeksit
 

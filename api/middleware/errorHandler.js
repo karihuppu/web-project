@@ -8,6 +8,10 @@ const PG_ERRORS = {
   '23502': { status: 400, message: 'Required value is missing' },
   '22001': { status: 400, message: 'Value is too long' },
   '22P02': { status: 400, message: 'Invalid input syntax' },
+  // Concurrency: deadlock, serialization failure, lock timeout. Safe to retry.
+  '40P01': { status: 503, message: 'Palvelu on hetkellisesti kiireinen. Yritä uudelleen.' },
+  '40001': { status: 503, message: 'Palvelu on hetkellisesti kiireinen. Yritä uudelleen.' },
+  '55P03': { status: 503, message: 'Palvelu on hetkellisesti kiireinen. Yritä uudelleen.' },
 }
 
 // Unique constraints that belong to a form field: the frontend shows the text next to that field.

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "./useAuth";
+import { useAuth, safeNextPath, loginPathFor } from "./useAuth";
+import { NicknameForm, DeleteAccount } from "./AccountSettings";
 import "./auth.css";
 
 
@@ -85,12 +86,20 @@ function useForm(initial, validate, submit) {
 }
 
 
+// After login/registration go back to the page that asked for it (?next=/movies/5),
+// but only to an internal path of this site.
 function useRedirectWhenLoggedIn(navigate) {
   const { user } = useAuth();
   useEffect(() => {
-    if (user) navigate("/");
+    if (user) navigate(safeNextPath(window.location.search));
   }, [user, navigate]);
 }
+
+// Keeps ?next=… when switching between the login and registration pages.
+const withNext = (path) => {
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next ? `${path}?next=${encodeURIComponent(next)}` : path;
+};
 
 
 
@@ -113,7 +122,7 @@ export function LoginPage({ navigate }) {
         </button>
       </form>
       <p className="auth-switch">
-        Ei vielä tiliä? <AuthLink href="/register" navigate={navigate}>Luo tili</AuthLink>
+        Ei vielä tiliä? <AuthLink href={withNext("/register")} navigate={navigate}>Luo tili</AuthLink>
       </p>
     </div>
   );
@@ -148,21 +157,33 @@ export function RegisterPage({ navigate }) {
         </button>
       </form>
       <p className="auth-switch">
-        Onko sinulla jo tili? <AuthLink href="/login" navigate={navigate}>Kirjaudu sisään</AuthLink>
+        Onko sinulla jo tili? <AuthLink href={withNext("/login")} navigate={navigate}>Kirjaudu sisään</AuthLink>
       </p>
     </div>
   );
 }
 
 export function AccountPage({ navigate }) {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, sessionError, reloadUser } = useAuth();
 
 
   useEffect(() => {
-    if (!loading && !user) navigate("/login");
-  }, [loading, user, navigate]);
+    // Guest (or expired token): log in and come back here.
+    if (!loading && !user && !sessionError) navigate(loginPathFor("/account"));
+  }, [loading, user, sessionError, navigate]);
 
   if (loading) return <p className="auth-loading">Ladataan…</p>;
+  if (!user && sessionError) {
+    // Server or network problem: the token is kept, the user is not signed out.
+    return (
+      <div className="auth-card">
+        <p className="auth-error auth-form-error" role="alert">
+          Tilin tietoja ei voitu ladata. {sessionError}
+        </p>
+        <button type="button" onClick={reloadUser}>Yritä uudelleen</button>
+      </div>
+    );
+  }
   if (!user) return null;
 
   return (
@@ -175,6 +196,8 @@ export function AccountPage({ navigate }) {
       <button type="button" onClick={() => { logout(); navigate("/"); }}>
         Kirjaudu ulos
       </button>
+      <NicknameForm key={user.id} />
+      <DeleteAccount navigate={navigate} />
     </div>
   );
 }

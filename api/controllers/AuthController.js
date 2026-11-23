@@ -1,7 +1,14 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { BCRYPT_COST, TOKEN_TTL, JWT_ALGORITHM, getJwtSecret } from '../config/auth.js'
-import { createUser, findUserByEmail, findUserById } from '../models/User.js'
+import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+  findPasswordHashById,
+  updateNickname,
+  deleteUserAccount,
+} from '../models/User.js'
 
 // Same rules as the frontend (src/auth/AuthPages.jsx), so messages match.
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -98,20 +105,78 @@ const login = async (req, res, next) => {
   }
 }
 
+const signedOut = () => {
+  const error = new Error('Kirjaudu sisään jatkaaksesi.')
+  error.status = 401
+  return error
+}
+
 // GET /api/auth/me (Authorization: Bearer <token>) -> 200 { user }
 const me = async (req, res, next) => {
   try {
     const user = await findUserById(req.userId)
-    if (!user) {
-      // Account was deleted after the token was issued.
-      const error = new Error('Kirjaudu sisään jatkaaksesi.')
-      error.status = 401
-      throw error
-    }
+    if (!user) throw signedOut() // account was deleted after the token was issued
     res.status(200).json({ user: toPublicUser(user) })
   } catch (error) {
     next(error)
   }
 }
 
-export { register, login, me }
+// PATCH /api/auth/me { nickname } -> 200 { user }
+// Only the nickname can be changed here; other fields in the body are ignored.
+// Same rules as registration. Saving the current nickname (or changing only its letter case)
+// is allowed; a nickname used by someone else -> 409 with fields.nickname (database constraint).
+const updateMe = async (req, res, next) => {
+  try {
+    const { nickname } = req.body ?? {}
+    const fields = {}
+    if (typeof nickname !== 'string') {
+      fields.nickname = 'Syötä nimimerkki.'
+    } else {
+      const trimmed = nickname.trim()
+      if (trimmed.length < NICKNAME_MIN) fields.nickname = 'Nimimerkissä pitää olla vähintään 3 merkkiä.'
+      else if (trimmed.length > NICKNAME_MAX) fields.nickname = 'Nimimerkki saa olla enintään 20 merkkiä.'
+    }
+    if (Object.keys(fields).length) throw validationError(fields)
+
+    const user = await updateNickname(req.userId, nickname.trim())
+    if (!user) throw signedOut()
+    res.status(200).json({ user: toPublicUser(user) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// DELETE /api/auth/me { password } -> 204
+// The current password is required. Wrong password -> 403 (the session stays valid);
+// invalid or expired token -> 401 (from requireAuth). Passwords are never logged.
+const deleteMe = async (req, res, next) => {
+  try {
+    const { password } = req.body ?? {}
+    if (typeof password !== 'string' || password.length === 0) {
+      throw validationError({ password: 'Syötä nykyinen salasanasi.' })
+    }
+
+    const hash = await findPasswordHashById(req.userId)
+    if (!hash) throw signedOut()
+    if (!(await passwordMatches(password, hash))) {
+      const error = new Error('Salasana on väärä. Tiliä ei poistettu.')
+      error.status = 403
+      error.fields = { password: 'Salasana on väärä.' }
+      throw error
+    }
+
+    const result = await deleteUserAccount(req.userId, hash)
+    if (result === 'not_found') throw signedOut()
+    if (result === 'changed') {
+      const error = new Error('Tilin tiedot muuttuivat. Yritä uudelleen.')
+      error.status = 409
+      throw error
+    }
+    res.status(204).end()
+  } catch (error) {
+    next(error)
+  }
+}
+
+export { register, login, me, updateMe, deleteMe }
