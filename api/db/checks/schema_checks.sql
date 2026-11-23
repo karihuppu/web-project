@@ -247,3 +247,45 @@ DELETE FROM movies WHERE tmdb_id IN (999000001, 999000002);
 SELECT pg_temp.expect_count(
     $q$SELECT count(*) FROM movie_genres mg JOIN genres g ON g.id = mg.genre_id WHERE g.tmdb_id = 999000001$q$,
     0, 'elokuvan poisto poistaa genre-linkit');
+
+-- (8) Migraatio 003: ryhmäsäännöt (yhden yhteyden tarkistukset; rinnakkaisuus: api/tests/concurrency.test.js)
+INSERT INTO users (email, nickname, password_hash)
+VALUES ('check.four@example.test', 'check_four', '!x'),
+       ('check.five@example.test', 'check_five', '!x'),
+       ('check.six@example.test',  'check_six',  '!x');
+
+SELECT pg_temp.expect_error(
+    $q$INSERT INTO groups (name) VALUES ('No Creator')$q$,
+    '23502', 'ryhmää ei voi luoda ilman luojaa');
+
+INSERT INTO groups (name, created_by)
+SELECT 'Check Group Three', id FROM users WHERE nickname = 'check_four';
+INSERT INTO group_members (group_id, user_id, joined_at)
+SELECT g.id, u.id, now() + interval '1 hour'
+FROM groups g, users u
+WHERE g.name = 'Check Group Three' AND u.nickname IN ('check_five', 'check_six');
+
+SELECT pg_temp.expect_error(
+    $q$UPDATE group_members SET user_id = (SELECT id FROM users WHERE nickname = 'check_six')
+       WHERE user_id = (SELECT id FROM users WHERE nickname = 'check_five')$q$,
+    '23514', 'jäsenyyden user_id:tä ei voi vaihtaa');
+
+-- Sama joined_at: pienempi user_id nousee ylläpitäjäksi.
+DELETE FROM group_members
+WHERE group_id = (SELECT id FROM groups WHERE name = 'Check Group Three')
+  AND user_id = (SELECT id FROM users WHERE nickname = 'check_four');
+SELECT pg_temp.expect_count(
+    $q$SELECT count(*) FROM group_members gm JOIN groups g ON g.id = gm.group_id
+       WHERE g.name = 'Check Group Three' AND gm.role = 'admin'
+         AND gm.user_id = (SELECT min(id) FROM users WHERE nickname IN ('check_five', 'check_six'))$q$,
+    1, 'tasatilanteessa pienempi user_id nousee ylläpitäjäksi');
+
+-- Tavallinen jäsen lähtee viimeisenä -> ryhmä poistetaan.
+DELETE FROM group_members
+WHERE group_id = (SELECT id FROM groups WHERE name = 'Check Group Three')
+  AND role = 'admin';
+DELETE FROM group_members
+WHERE group_id = (SELECT id FROM groups WHERE name = 'Check Group Three');
+SELECT pg_temp.expect_count(
+    $q$SELECT count(*) FROM groups WHERE name = 'Check Group Three'$q$,
+    0, 'tyhjä ryhmä poistetaan myös tavallisen jäsenen lähtiessä');

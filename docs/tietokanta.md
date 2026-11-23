@@ -11,6 +11,7 @@ Graafinen ERD ja arkkitehtuurikaavio tehdään, kun rakenne on hyväksytty.
 | --- | --- |
 | `api/db/migrations/001_users_movies_reviews.sql` | `users`, `movies`, `genres`, `movie_genres`, `reviews` |
 | `api/db/migrations/002_watchlists_groups.sql` | `watchlists`, `watchlist_movies`, `groups`, `group_members` |
+| `api/db/migrations/003_group_admin_concurrency.sql` | Ryhmätriggerien korjaus (rinnakkaisuus), ei uusia tauluja; ks. luku 5.3 |
 | `api/db/seeds/demo_seed.sql` | Esittelydata (voi ajaa monta kertaa) |
 | `api/db/checks/schema_checks.sql` | Rajoitteiden tarkistukset (aina ROLLBACK) |
 | `api/db/migrate.js` | Migraatiotyökalu (`pg` + `dotenv`, ei uusia riippuvuuksia) |
@@ -163,7 +164,7 @@ Ne ajetaan käsin, kun muutos on testattu paikallisesti. **`api/init.sql`:ää e
 (siinä on `DROP TABLE IF EXISTS test`). Tietokantaa `mydb` ei käsitellä.
 
 Edellytykset: oma IP on sallittu PostgreSQL-palvelimen *Networking*-asetuksissa
-(sama asia, joka vaaditaan DBeaverille), ja `cinema_db`:ssä on tällä hetkellä vain taulu `test`.
+(sama asia, joka vaaditaan DBeaverille). Tarkista aina ensin `npm run db:status`, mitkä migraatiot on jo ajettu.
 
 ### 5.1 Komentoriviltä (suositus)
 
@@ -223,6 +224,42 @@ Käytä vain, jos komentorivi ei toimi. Historia kirjataan käsin, jotta `npm ru
 6. Demodata (valinnainen): aja `api/db/seeds/demo_seed.sql` ja Commit.
 
 Tarkistussummat vastaavat tiedostojen nykyistä sisältöä (rivinvaihdot normalisoitu LF:ksi).
+Migraatio 003 ajetaan komentoriviltä (luku 5.3); DBeaver-polkua sille ei suositella.
+
+### 5.3 Migraatio 003 (ryhmätriggerien korjaus)
+
+Migraatio 003 korvaa ryhmätriggerit (ks. [erd.md](erd.md#rinnakkaisuus)). Se ei muuta tauluja eikä poista dataa.
+Ennen kuin säännöt kiristyvät, migraatio tarkistaa nykyisen datan. Jos löytyy ryhmä, jossa on jäseniä mutta ei
+ylläpitäjää, tai tyhjä ryhmä, **migraatio pysähtyy eikä muuta mitään** (virhe "Migration 003 stopped", DETAIL listaa
+ryhmien id:t). Korjauksesta päätetään ryhmä kerrallaan; mitään ei poisteta tai nimetä automaattisesti.
+
+1. **Diagnostiikka ensin** (vain luku, DBeaver tai psql `cinema_db`:ssä):
+   ```sql
+   -- ryhmät, joissa on jäseniä mutta ei ylläpitäjää
+   SELECT g.id, g.name, g.created_by,
+          (SELECT count(*) FROM group_members m WHERE m.group_id = g.id) AS members
+   FROM groups g
+   WHERE EXISTS (SELECT 1 FROM group_members m WHERE m.group_id = g.id)
+     AND NOT EXISTS (SELECT 1 FROM group_members m WHERE m.group_id = g.id AND m.role = 'admin');
+
+   -- tyhjät ryhmät
+   SELECT g.id, g.name, g.created_by, g.created_at
+   FROM groups g
+   WHERE NOT EXISTS (SELECT 1 FROM group_members m WHERE m.group_id = g.id);
+   ```
+   Molempien pitäisi palauttaa 0 riviä (demodatassa näin on). Jos rivejä tulee: päätä, kuka on ylläpitäjä
+   (`UPDATE group_members SET role = 'admin' WHERE group_id = … AND user_id = …`) tai poistetaanko tyhjä ryhmä
+   (`DELETE FROM groups WHERE id = …`). Tee muutos vain yksittäiselle id:lle ja sovi siitä tiimin kanssa.
+2. **Ajo** samoilla muuttujilla kuin luvussa 5.1:
+   ```powershell
+   npm run db:status                              # 001, 002 applied; 003 pending
+   npm run db:migrate -- --confirm=cinema_db
+   npm run db:status                              # 3 applied, 0 pending
+   ```
+3. **Paluu:** jos jotain menee vikaan kesken, migraatio peruuntuu kokonaan (yksi transaktio).
+
+Uusi backend-versio (tilin hallinta) toimii myös ilman migraatiota 003, joten järjestys on vapaa. Suositus:
+diagnostiikka → migraatio 003 → julkaisu → tarkistus.
 
 ## 6. Demodata
 

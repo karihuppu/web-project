@@ -1,5 +1,5 @@
 import axios from "axios";
-import { authHeaders } from "../auth/useAuth";
+import { authHeaders, DRAFT_PREFIX } from "../auth/useAuth";
 
 // Calls for the signed-in user's own review. The backend decides the author from the token.
 const http = axios.create({
@@ -46,25 +46,26 @@ export const updateOwnReview = (movieId, review) =>
 export const deleteOwnReview = (movieId) =>
   send({ method: "DELETE", url: `/api/movies/${movieId}/review` });
 
-// Unsaved text survives an expired session (kept for this browser tab only).
-const draftKey = (movieId) => `review-draft:${movieId}`;
-export const saveDraft = (movieId, draft) => {
+// Unsaved text survives an expired session (this browser tab only). The key contains the
+// user id, so another account in the same browser never sees it; logout clears it.
+const draftKey = (userId, movieId) => `${DRAFT_PREFIX}${userId}:${movieId}`;
+export const saveDraft = (userId, movieId, draft) => {
   try {
-    sessionStorage.setItem(draftKey(movieId), JSON.stringify(draft));
+    sessionStorage.setItem(draftKey(userId, movieId), JSON.stringify(draft));
   } catch {
     /* storage unavailable: nothing else to do */
   }
 };
-export const loadDraft = (movieId) => {
+export const loadDraft = (userId, movieId) => {
   try {
-    return JSON.parse(sessionStorage.getItem(draftKey(movieId)) || "null");
+    return JSON.parse(sessionStorage.getItem(draftKey(userId, movieId)) || "null");
   } catch {
     return null;
   }
 };
-export const clearDraft = (movieId) => {
+export const clearDraft = (userId, movieId) => {
   try {
-    sessionStorage.removeItem(draftKey(movieId));
+    sessionStorage.removeItem(draftKey(userId, movieId));
   } catch {
     /* ignore */
   }

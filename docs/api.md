@@ -20,6 +20,8 @@ Kehityksessä perusosoite on `VITE_API_URL` (oletus `http://localhost:3000`), tu
 | POST | `/api/auth/register` | Rekisteröinti → token + käyttäjä | #4 |
 | POST | `/api/auth/login` | Kirjautuminen → token + käyttäjä | #4 |
 | GET | `/api/auth/me` | Kirjautunut käyttäjä (vaatii tokenin) | #4 |
+| PATCH | `/api/auth/me` | Nimimerkin muutos (vaatii tokenin) | #4 |
+| DELETE | `/api/auth/me` | Tilin poisto salasanalla vahvistaen (vaatii tokenin) | #4 |
 
 ## GET /api/movies
 
@@ -158,6 +160,57 @@ antavat saman vastauksen `401 "Väärä sähköposti tai salasana."`. Demodatan 
 Otsake `Authorization: Bearer <token>` → `200 { "user": { … } }`. Puuttuva, vanhentunut tai väärin
 allekirjoitettu token → `401`.
 
+**Kaikki suojatut reitit** (`requireAuth`) tarkistavat tokenin lisäksi, että tili on yhä olemassa:
+poistetun tilin vanha token → `401`. Jos tietokantaa ei tavoiteta, vastaus on `500`/`503` eikä `401`,
+jotta palvelinvika ei näytä virheelliseltä tokenilta.
+
+### PATCH /api/auth/me
+
+```json
+{ "nickname": "UusiNimi" }
+```
+
+→ `200 { "user": { "id", "email", "nickname", "created_at" } }`. Käyttäjä päätellään **vain tokenista**;
+rungon muut kentät (`id`, `user_id`, `email`, `password` …) jätetään huomiotta.
+
+| Tilanne | Vastaus |
+| --- | --- |
+| Nimimerkki 3–20 merkkiä reunojen välilyöntien poiston jälkeen | `200`, tallennetaan trimmattuna |
+| Sama kuin nykyinen | `200`, ei muutosta (`updated_at` ei muutu) |
+| Vain kirjainkoko muuttuu (`anna` → `Anna`) | `200`, sallittu (oma nimimerkki ei ole "varattu") |
+| Toisen käyttäjän nimimerkki millä tahansa kirjainkoolla | `409`, `fields.nickname` |
+| Puuttuu, ei merkkijono, liian lyhyt/pitkä | `400`, `fields.nickname` |
+
+Arvosteluissa nimimerkki haetaan `users`-taulusta liitoksella, joten uusi nimi näkyy heti kaikissa arvosteluissa.
+
+### DELETE /api/auth/me
+
+```json
+{ "password": "nykyinen salasana" }
+```
+
+→ `204` ilman runkoa.
+
+| Tilanne | Vastaus |
+| --- | --- |
+| `password` puuttuu, tyhjä tai ei merkkijono | `400`, `fields.password` |
+| Väärä salasana | `403`, `fields.password`; tili ja token säilyvät |
+| Token puuttuu, vanhentunut tai tili jo poistettu | `401` |
+| Rinnakkainen muutos (lukitus, deadlock) | `503`, voi yrittää uudelleen |
+
+Poisto tehdään yhdessä transaktiossa. Tietokannan säännöt: toivelistat ja niiden elokuvat sekä ryhmäjäsenyydet
+poistuvat; tähtiarviot säilyvät nimettöminä (`user_id = NULL`, `author_deleted_at`), kommentit poistuvat; ryhmä
+saa uuden ylläpitäjän (pisimpään ollut jäsen) tai poistetaan, jos se tyhjenee. Muiden käyttäjien tiedot eivät muutu.
+
+**Tarkennus ehdotukseen:** `DELETE`-pyynnössä on runko (salasana). Express ja Azure App Service välittävät sen;
+selaimen `fetch`/Axios tukee sitä. Väärä salasana on tarkoituksella `403` eikä `401`, jotta käyttöliittymä
+ei kirjaa käyttäjää ulos väärän vahvistussalasanan takia.
+
+**Rinnakkaisuus:** `requireAuth`-tarkistuksen jälkeen tili voi vielä poistua. Siksi kirjoitukset nojaavat
+tietokantaan: arvostelun lisäys lukitsee käyttäjärivin viiteavaimen kautta. Jos arvostelu valmistuu ennen poistoa,
+poisto anonymisoi sen; jos poisto valmistuu ensin, lisäys epäonnistuu (`401`). Poisto lukitsee ensin käyttäjän ryhmät
+(`id`-järjestyksessä) ja sitten käyttäjärivin, samassa järjestyksessä kuin ryhmätriggerit (migraatio 003).
+
 ## Virheet
 
 ```json
@@ -175,13 +228,17 @@ Lomakkeiden virheissä mukana on `fields`, jonka tekstit näytetään kentän vi
 | Tilanne | Status |
 | --- | --- |
 | Virheellinen parametri tai lomakkeen kenttä, tietokannan CHECK/NOT NULL | 400 (+ `fields`) |
-| Ei kirjautunut, väärä tunnus tai salasana, kelvoton token | 401 |
+| Ei kirjautunut, väärä tunnus tai salasana, kelvoton token, poistettu tili | 401 |
+| Väärä vahvistussalasana (tilin poisto) | 403 (+ `fields.password`) |
 | Ei löydy | 404 |
 | Jo olemassa (UNIQUE), käytössä oleva rivi (RESTRICT) | 409 (+ `constraint`; sähköposti/nimimerkki myös `fields`) |
 | Palvelimen virhe | 500, yleinen viesti; yksityiskohdat vain palvelimen lokiin |
 | Kirjautuminen ei käytettävissä (`JWT_SECRET` puuttuu) | 503 |
+| Rinnakkainen muutos: deadlock (`40P01`), serialisointi (`40001`), lukon aikakatkaisu (`55P03`) | 503, voi yrittää uudelleen |
 
 ## Testit
 
-`api`-kansiossa `npm test` ajaa integraatiotestit (`api/tests/auth.test.js`, `api/tests/reviews.test.js`).
-Ne tarvitsevat migroidun PostgreSQL-tietokannan (`DB_*`-muuttujat). Testikäyttäjät poistetaan lopuksi.
+`api`-kansiossa `npm test` ajaa integraatiotestit: `auth.test.js`, `reviews.test.js`, `account.test.js`
+ja `concurrency.test.js` (kaksi tietokantayhteyttä: ryhmätriggerit ja tilin poisto vs. kirjoitus).
+Ne tarvitsevat erillisen, migroidun PostgreSQL-testitietokannan (`DB_*`-muuttujat, migraatiot 001–003).
+**Älä aja testejä Azuren `cinema_db`:hen.** Testidata poistetaan lopuksi.

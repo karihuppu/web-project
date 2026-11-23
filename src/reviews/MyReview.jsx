@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../auth/useAuth";
+import { useAuth, loginPathFor } from "../auth/useAuth";
 import {
   COMMENT_MAX,
   charCount,
@@ -52,8 +52,11 @@ export default function MyReview({ movieId, navigate, onChanged }) {
   const [notice, setNotice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // The session expired while writing: the text was saved for this user (shown after login).
+  const [expiredWithDraft, setExpiredWithDraft] = useState(false);
 
-  const loadKey = user ? `${movieId}:${user.id}:${attempt}` : null;
+  const userId = user?.id;
+  const loadKey = userId ? `${movieId}:${userId}:${attempt}` : null;
 
   // Own review comes from GET /api/movies/:id/review, not from the paged public list.
   useEffect(() => {
@@ -62,8 +65,9 @@ export default function MyReview({ movieId, navigate, onChanged }) {
     fetchOwnReview(movieId)
       .then((review) => {
         if (cancelled) return;
-        const draft = loadDraft(movieId);
+        const draft = loadDraft(userId, movieId);
         setOwn({ key: loadKey, status: "ready", review });
+        setExpiredWithDraft(false);
         setForm(draft ?? toForm(review));
         setErrors({});
         setConfirmDelete(false);
@@ -76,7 +80,7 @@ export default function MyReview({ movieId, navigate, onChanged }) {
       .catch((error) => {
         if (cancelled) return;
         if (error.status === 401) {
-          logout(); // token expired or account removed
+          logout({ keepDrafts: true }); // token expired or account removed
           return;
         }
         setOwn({ key: loadKey, status: "error", review: null, message: error.message });
@@ -84,23 +88,23 @@ export default function MyReview({ movieId, navigate, onChanged }) {
     return () => {
       cancelled = true;
     };
-  }, [loadKey, movieId, logout]);
+  }, [loadKey, movieId, userId, logout]);
 
   if (authLoading) return null;
 
   if (!user) {
-    const draft = loadDraft(movieId);
+    const back = `/movies/${movieId}`;
     return (
       <section className="my-review my-review--guest" aria-labelledby="my-review-title">
         <h2 id="my-review-title">Arvioi elokuva</h2>
         <p>
-          {draft
-            ? "Istuntosi vanheni. Kirjoittamasi arvio on tallessa tässä välilehdessä: kirjaudu sisään ja palaa tähän elokuvaan, niin voit tallentaa sen."
+          {expiredWithDraft
+            ? "Istuntosi vanheni. Kirjoittamasi arvio on tallessa tässä välilehdessä: kirjaudu samalla tilillä, niin palaat tähän elokuvaan ja voit tallentaa sen."
             : "Kirjaudu sisään, niin voit antaa elokuvalle tähdet ja kirjoittaa kommentin."}
         </p>
         <p className="my-review__links">
-          <NavLink href="/login" navigate={navigate}>Kirjaudu sisään</NavLink>
-          <NavLink href="/register" navigate={navigate}>Luo tili</NavLink>
+          <NavLink href={loginPathFor(back)} navigate={navigate}>Kirjaudu sisään</NavLink>
+          <NavLink href={`/register?next=${encodeURIComponent(back)}`} navigate={navigate}>Luo tili</NavLink>
         </p>
       </section>
     );
@@ -111,8 +115,10 @@ export default function MyReview({ movieId, navigate, onChanged }) {
 
   const handleWriteError = async (error) => {
     if (error.status === 401) {
-      saveDraft(movieId, form); // keep the text, then ask the user to log in again
-      logout();
+      // Keep the text for this user, then ask them to log in again.
+      saveDraft(user.id, movieId, form);
+      setExpiredWithDraft(true);
+      logout({ keepDrafts: true });
       return;
     }
     if (error.status === 400) {
@@ -161,7 +167,7 @@ export default function MyReview({ movieId, navigate, onChanged }) {
       const saved = existing
         ? await updateOwnReview(movieId, payload)
         : await createOwnReview(movieId, payload);
-      clearDraft(movieId);
+      clearDraft(user.id, movieId);
       setOwn((current) => ({ ...current, review: saved }));
       setForm(toForm(saved));
       setNotice({ kind: "success", text: existing ? "Muutokset tallennettiin." : "Arviosi tallennettiin." });
@@ -179,7 +185,7 @@ export default function MyReview({ movieId, navigate, onChanged }) {
     setNotice(null);
     try {
       await deleteOwnReview(movieId);
-      clearDraft(movieId);
+      clearDraft(user.id, movieId);
       setOwn((current) => ({ ...current, review: null }));
       setForm(EMPTY);
       setErrors({});

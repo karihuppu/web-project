@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { AuthContext, TOKEN_KEY } from "./useAuth";
+import { AuthContext, TOKEN_KEY, clearDrafts } from "./useAuth";
 
 
 const http = axios.create({
@@ -13,6 +13,7 @@ const http = axios.create({
 const MESSAGES = {
   400: "Tarkista syöttämäsi tiedot.",
   401: "Väärä sähköposti tai salasana.",
+  403: "Salasana on väärä.",
   404: "Palvelua ei löytynyt. Yritä hetken päästä uudelleen.",
   409: "Sähköposti tai nimimerkki on jo käytössä.",
   500: "Palvelimella tapahtui virhe. Yritä hetken päästä uudelleen.",
@@ -57,20 +58,34 @@ async function getMe() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(() => !!localStorage.getItem(TOKEN_KEY));
+  // Set when the profile could not be loaded for a reason other than an invalid token
+  // (network or server error): the token is kept and the page can offer a retry.
+  const [sessionError, setSessionError] = useState(null);
 
-  useEffect(() => {
-    if (!localStorage.getItem(TOKEN_KEY)) return;
+  const loadUser = useCallback(() => {
+    if (!localStorage.getItem(TOKEN_KEY)) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setSessionError(null);
     getMe()
       .then(setUser)
       .catch((err) => {
-        if (err.status === 401) localStorage.removeItem(TOKEN_KEY); 
+        if (err.status === 401) localStorage.removeItem(TOKEN_KEY);
+        else setSessionError(err.message);
       })
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
+
   const login = async (email, password) => {
     const { token, user } = await request("/login", { method: "POST", body: { email, password } });
     localStorage.setItem(TOKEN_KEY, token);
+    setSessionError(null);
     setUser(user ?? (await getMe()));
   };
 
@@ -79,19 +94,45 @@ export function AuthProvider({ children }) {
     const data = await request("/register", { method: "POST", body: { email, nickname, password } });
     if (data?.token) {
       localStorage.setItem(TOKEN_KEY, data.token);
+      setSessionError(null);
       setUser(data.user ?? (await getMe()));
     } else {
       await login(email, password);
     }
   };
 
-  const logout = () => {
+  // keepDrafts: used when the token expired while writing, so the text can be saved after
+  // logging in again. A normal logout removes this user's unsaved review drafts.
+  const logout = ({ keepDrafts = false } = {}) => {
+    if (user && !keepDrafts) clearDrafts(user.id);
     localStorage.removeItem(TOKEN_KEY);
+    setSessionError(null);
     setUser(null);
   };
 
+  // A 401 from the account routes means the token is no longer valid.
+  const signOutOn401 = (err) => {
+    if (err.status === 401) logout();
+    throw err;
+  };
+
+  const updateNickname = async (nickname) => {
+    const data = await request("/me", { method: "PATCH", body: { nickname }, auth: true }).catch(signOutOn401);
+    setUser(data.user);
+    return data.user;
+  };
+
+  // Wrong password -> 403, the user stays signed in. Success -> everything of this account is
+  // removed from the browser (token, user, review drafts).
+  const deleteAccount = async (password) => {
+    await request("/me", { method: "DELETE", body: { password }, auth: true }).catch(signOutOn401);
+    logout();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, sessionError, reloadUser: loadUser, login, register, logout, updateNickname, deleteAccount }}
+    >
       {children}
     </AuthContext.Provider>
   );

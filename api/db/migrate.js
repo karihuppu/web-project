@@ -274,6 +274,7 @@ const main = async () => {
 main().catch((error) => {
   console.error(`ERROR: ${error.message}`)
   if (error.detail) console.error(`DETAIL: ${error.detail}`)
+  if (error.hint) console.error(`HINT: ${error.hint}`)
   if (error.where) console.error(`WHERE: ${error.where}`)
   process.exitCode = 1
 })

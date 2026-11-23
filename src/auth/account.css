@@ -1,0 +1,21 @@
+/* Account page sections. Classes start with account- ; fields reuse auth-field / auth-error. */
+.account-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #8885; }
+.account-section h2 { font-size: 1.3rem; margin: 0 0 1rem; }
+.account-section form > button[type="submit"],
+.account-danger__open,
+.account-danger__confirm,
+.account-danger__cancel {
+  width: 100%; padding: 0.7rem; font: inherit; font-weight: 600; cursor: pointer;
+  border-radius: 6px;
+}
+.account-section form > button[type="submit"] { border: 0; background: #2563eb; color: #fff; }
+.account-section button:disabled { opacity: 0.6; cursor: wait; }
+.account-section button:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+.account-success { color: #15803d; font-size: 0.95rem; margin: 0 0 1rem; }
+
+.account-danger__open, .account-danger__cancel { background: transparent; color: inherit; border: 1px solid #8887; }
+.account-danger__open { border-color: #dc2626; color: #dc2626; }
+.account-danger__confirm { border: 0; background: #dc2626; color: #fff; }
+.account-danger__list { margin: 0 0 1rem; padding-left: 1.25rem; }
+.account-danger__list li { margin-bottom: 0.25rem; }
+.account-danger__actions { display: grid; gap: 0.75rem; }
