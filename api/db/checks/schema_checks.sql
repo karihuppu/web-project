@@ -289,3 +289,42 @@ WHERE group_id = (SELECT id FROM groups WHERE name = 'Check Group Three');
 SELECT pg_temp.expect_count(
     $q$SELECT count(*) FROM groups WHERE name = 'Check Group Three'$q$,
     0, 'tyhjä ryhmä poistetaan myös tavallisen jäsenen lähtiessä');
+
+-- (9) Migraatio 004: yksityisen ryhmän nimi ja liittymispyynnöt
+INSERT INTO groups (name, visibility, created_by)
+SELECT 'Check Secret', 'private', id FROM users WHERE nickname = 'check_four';
+
+SELECT pg_temp.expect_error(
+    $q$INSERT INTO groups (name, visibility, created_by)
+       SELECT 'CHECK SECRET', 'private', id FROM users WHERE nickname = 'check_five'$q$,
+    '23505', 'yksityisen ryhmän nimi on yksilöllinen kirjainkoosta riippumatta');
+
+INSERT INTO groups (name, visibility, created_by)
+SELECT 'Check Secret', 'public', id FROM users WHERE nickname = 'check_five';
+SELECT pg_temp.expect_count(
+    $q$SELECT count(*) FROM groups WHERE lower(name) = 'check secret'$q$,
+    2, 'julkinen ryhmä voi olla saman niminen kuin yksityinen');
+
+INSERT INTO group_join_requests (group_id, user_id)
+SELECT g.id, u.id FROM groups g, users u
+WHERE g.name = 'Check Secret' AND g.visibility = 'private' AND u.nickname = 'check_six';
+
+SELECT pg_temp.expect_error(
+    $q$INSERT INTO group_join_requests (group_id, user_id)
+       SELECT g.id, u.id FROM groups g, users u
+       WHERE g.name = 'Check Secret' AND g.visibility = 'private' AND u.nickname = 'check_six'$q$,
+    '23505', 'yksi odottava pyyntö per ryhmä ja käyttäjä');
+SELECT pg_temp.expect_error(
+    $q$UPDATE group_join_requests SET status = 'approved'
+       WHERE user_id = (SELECT id FROM users WHERE nickname = 'check_six')$q$,
+    '23514', 'käsitellyllä pyynnöllä on aina decided_at');
+
+-- Jäsenyys syntyy (esim. lisäys nimimerkillä) -> odottava pyyntö suljetaan.
+INSERT INTO group_members (group_id, user_id)
+SELECT g.id, u.id FROM groups g, users u
+WHERE g.name = 'Check Secret' AND g.visibility = 'private' AND u.nickname = 'check_six';
+SELECT pg_temp.expect_count(
+    $q$SELECT count(*) FROM group_join_requests
+       WHERE user_id = (SELECT id FROM users WHERE nickname = 'check_six')
+         AND status = 'approved' AND decided_at IS NOT NULL$q$,
+    1, 'jäsenyys sulkee odottavan pyynnön');

@@ -47,3 +47,14 @@ export const addMember = (id, nickname) =>
   send({ method: "POST", url: `/api/groups/${id}/members`, data: { nickname } });
 export const removeMember = (id, userId) =>
   send({ method: "DELETE", url: `/api/groups/${id}/members/${userId}` });
+
+// Private groups: exact-name search and join requests (issue #13).
+export const searchPrivateGroup = (name) =>
+  send({ method: "GET", url: "/api/groups/private", params: { name } }).then((d) => d.match);
+export const requestToJoin = (id) => send({ method: "POST", url: `/api/groups/${id}/requests` });
+export const fetchJoinRequests = (id) =>
+  send({ method: "GET", url: `/api/groups/${id}/requests` }).then((d) => d.items);
+export const approveJoinRequest = (id, requestId) =>
+  send({ method: "POST", url: `/api/groups/${id}/requests/${requestId}/approve` });
+export const rejectJoinRequest = (id, requestId) =>
+  send({ method: "POST", url: `/api/groups/${id}/requests/${requestId}/reject` });

@@ -18,6 +18,7 @@ const PG_ERRORS = {
 const CONSTRAINT_FIELDS = {
   users_email_lower_uq: { email: 'Tällä sähköpostilla on jo tili.' },
   users_nickname_lower_uq: { nickname: 'Nimimerkki on jo käytössä.' },
+  groups_private_name_uq: { name: 'Samanniminen yksityinen ryhmä on jo olemassa. Valitse toinen nimi.' },
 }
 
 // Unique constraints with a user-facing message of their own.

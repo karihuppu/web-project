@@ -30,6 +30,11 @@ Kehityksessä perusosoite on `VITE_API_URL` (oletus `http://localhost:3000`), tu
 | DELETE | `/api/groups/:id/membership` | Oma eroaminen ryhmästä (vaatii tokenin) | #7 |
 | POST | `/api/groups/:id/members` | Ylläpitäjä lisää jäsenen nimimerkillä | #7 |
 | DELETE | `/api/groups/:id/members/:userId` | Ylläpitäjä poistaa tavallisen jäsenen | #7 |
+| GET | `/api/groups/private?name=` | Yksityisen ryhmän haku koko nimellä (vaatii tokenin) | #13 |
+| POST | `/api/groups/:id/requests` | Liittymispyyntö yksityiseen ryhmään (vaatii tokenin) | #13 |
+| GET | `/api/groups/:id/requests` | Odottavat pyynnöt (ryhmän ylläpitäjä) | #13 |
+| POST | `/api/groups/:id/requests/:requestId/approve` | Pyynnön hyväksyntä (ryhmän ylläpitäjä) | #13 |
+| POST | `/api/groups/:id/requests/:requestId/reject` | Pyynnön hylkäys (ryhmän ylläpitäjä) | #13 |
 
 ## GET /api/movies
 
@@ -248,6 +253,33 @@ Säännöt ylläpitäjästä ja tyhjästä ryhmästä hoitaa tietokanta (migraat
   `user_id`) nousee ylläpitäjäksi; kun viimeinen jäsen eroaa, ryhmä poistetaan.
 - **Ylläpitäjä** voi poistaa vain tavallisia jäseniä. Roolien vaihto käsin ei kuulu tähän versioon.
 
+### Yksityisen ryhmän haku ja liittymispyynnöt (#13, migraatio 004)
+
+Nimi on **hakuavain**, ryhmän `id` on **toimintojen avain**. Yksityisen ryhmän nimi on yksilöllinen normalisoituna
+`lower(btrim(name))` (indeksi `groups_private_name_uq`); haku käyttää samaa normalisointia. Julkinen ryhmä voi olla
+saman niminen, ja se näkyy edelleen vain julkisessa haussa (`GET /api/groups?q=`). Saman nimen luominen toiselle
+yksityiselle ryhmälle → `409` + `fields.name`.
+
+| Pyyntö | Onnistuu | Virheet |
+| --- | --- | --- |
+| `GET /api/groups/private?name=<koko nimi>` | `200 { "match": { id, name, visibility, my_role, request_status } }` tai `{ "match": null }` | `401` ilman tokenia; `400` tyhjä/liian pitkä nimi |
+| `POST /api/groups/:id/requests` | `201 { request }` uusi; `200 { request }` odottava oli jo olemassa | `404` ei ryhmää; `400` julkinen ryhmä (liity suoraan); `409` jo jäsen |
+| `GET /api/groups/:id/requests` | `200 { items: [{ id, created_at, user: { id, nickname } }] }` odottavat, vanhin ensin | `403` jäsen, ei ylläpitäjä; `404` ulkopuolinen (yksityinen) |
+| `POST /api/groups/:id/requests/:requestId/approve` | `200 { status: "approved", member }` (`role: "member"`) | `403`/`404` kuten yllä; `404` pyyntöä ei ole tässä ryhmässä; `409` jo käsitelty |
+| `POST /api/groups/:id/requests/:requestId/reject` | `200 { status: "rejected" }` | samat |
+
+- Haku palauttaa vain `id`:n, nimen ja oman tilan (`my_role`, viimeisimmän pyynnön `request_status`:
+  `pending`/`approved`/`rejected`/`null`). Kuvaus, jäsenmäärä ja jäsenet näkyvät vasta jäsenelle.
+- `request` (pyytäjälle): `{ id, status, created_at, decided_at }`. Yhdellä käyttäjällä on enintään yksi odottava
+  pyyntö samaan ryhmään; uusi pyyntö hylkäyksen jälkeen on sallittu.
+- **Hyväksyntä** tekee yhdessä transaktiossa: lukitsee ryhmän → tarkistaa ylläpitäjän roolin → merkitsee pyynnön
+  hyväksytyksi → lisää jäsenyyden (`member`). Kun jäsenyys syntyy millä tahansa tavalla (myös ylläpitäjän lisäys
+  nimimerkillä), tietokannan trigger sulkee saman käyttäjän odottavan pyynnön. Rinnakkainen hyväksyntä ja lisäys
+  nimimerkillä: toinen onnistuu, toinen saa `409`; jäsenyysrivejä on yksi, eikä pyyntö jää odottamaan.
+- Tilin poisto poistaa käyttäjän pyynnöt; ryhmän poisto poistaa ryhmän pyynnöt.
+- **Rajaus:** `POST /:id/requests` tunnistaa ryhmän id:llä. Joku, joka arvaa yksityisen ryhmän id:n, voi lähettää
+  pyynnön tuntematta nimeä; ryhmän sisältö ei silti näy, ja ylläpitäjä päättää. Kutsulinkit/-koodit eivät kuulu #13:een.
+
 ## Virheet
 
 ```json
@@ -277,7 +309,8 @@ Lomakkeiden virheissä mukana on `fields`, jonka tekstit näytetään kentän vi
 ## Testit
 
 `api`-kansiossa `npm test` ajaa integraatiotestit: `auth.test.js`, `reviews.test.js`, `account.test.js`,
-`groups.test.js` (ryhmät API:n kautta, myös rinnakkaiset eroamiset) ja `concurrency.test.js`
+`groups.test.js` (ryhmät API:n kautta, myös rinnakkaiset eroamiset), `group-requests.test.js`
+(yksityisen ryhmän haku ja liittymispyynnöt, myös rinnakkainen hyväksyntä ja lisäys) ja `concurrency.test.js`
 (kaksi tietokantayhteyttä: ryhmätriggerit ja tilin poisto vs. kirjoitus).
-Ne tarvitsevat erillisen, migroidun PostgreSQL-testitietokannan (`DB_*`-muuttujat, migraatiot 001–003).
+Ne tarvitsevat erillisen, migroidun PostgreSQL-testitietokannan (`DB_*`-muuttujat, migraatiot 001–004).
 **Älä aja testejä Azuren `cinema_db`:hen.** Testidata poistetaan lopuksi.

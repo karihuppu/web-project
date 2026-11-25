@@ -8,6 +8,9 @@ import {
   leaveGroup,
   addMember,
   removeMember,
+  fetchJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
 } from "./groupApi";
 import "./groups.css";
 
@@ -70,6 +73,82 @@ function AddMemberForm({ groupId, onAdded, onUnauthorized }) {
         )}
       </div>
     </form>
+  );
+}
+
+// Admin of a private group: pending join requests with approve / reject.
+// The server checks the admin role again for the list and for every decision.
+function JoinRequests({ groupId, version, onDecided, onUnauthorized }) {
+  const [state, setState] = useState({ key: null, items: [], error: null });
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState(null);
+  const key = `${groupId}:${version}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchJoinRequests(groupId)
+      .then((items) => !cancelled && setState({ key, items, error: null }))
+      .catch((err) => {
+        if (cancelled) return;
+        if (err.status === 401) onUnauthorized();
+        else setState({ key, items: [], error: err.message });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, groupId, onUnauthorized]);
+
+  const decideOn = async (request, approve) => {
+    if (busyId) return;
+    setBusyId(request.id);
+    setError(null);
+    try {
+      await (approve ? approveJoinRequest(groupId, request.id) : rejectJoinRequest(groupId, request.id));
+      onDecided(
+        approve
+          ? `${request.user.nickname} hyväksyttiin ryhmän jäseneksi.`
+          : `${request.user.nickname}:n pyyntö hylättiin.`,
+      );
+    } catch (err) {
+      if (err.status === 401) onUnauthorized();
+      else {
+        setError(err.message);
+        onDecided(null); // refresh: the request may have been handled already
+      }
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <section aria-labelledby="requests-title">
+      <h2 id="requests-title">Liittymispyynnöt</h2>
+      {state.key !== key && <p className="message message--info" role="status">Ladataan pyyntöjä…</p>}
+      {state.key === key && state.error && <p className="message message--error" role="alert">{state.error}</p>}
+      {error && <p className="message message--error" role="alert">{error}</p>}
+      {state.key === key && !state.error && state.items.length === 0 && (
+        <p className="group-empty">Ei avoimia liittymispyyntöjä.</p>
+      )}
+      {state.key === key && state.items.length > 0 && (
+        <ul className="group-list">
+          {state.items.map((r) => (
+            <li className="group-row" key={r.id}>
+              <span className="group-row__name">{r.user.nickname}</span>
+              <span className="group-row__confirm">
+                <button className="button" type="button" disabled={!!busyId}
+                  aria-label={`Hyväksy ${r.user.nickname}`} onClick={() => decideOn(r, true)}>
+                  {busyId === r.id ? "…" : "Hyväksy"}
+                </button>
+                <button className="button button--secondary" type="button" disabled={!!busyId}
+                  aria-label={`Hylkää ${r.user.nickname}`} onClick={() => decideOn(r, false)}>
+                  Hylkää
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -229,6 +308,10 @@ export default function GroupPage({ groupId, navigate }) {
           <h2 id="admin-title">Ylläpito</h2>
           <AddMemberForm groupId={group.id} onAdded={reload} onUnauthorized={logout} />
         </section>
+      )}
+
+      {isAdmin && group.visibility === "private" && (
+        <JoinRequests groupId={group.id} version={version} onDecided={reload} onUnauthorized={logout} />
       )}
 
       <section aria-labelledby="members-title">

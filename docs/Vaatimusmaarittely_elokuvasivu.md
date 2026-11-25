@@ -1,6 +1,6 @@
 # Vaatimusmäärittely: Elokuvasivu
 
-**Versio:** 0.5
+**Versio:** 0.6
 **Päivämäärä:** 25.11.2026
 **Laatija:** Ryhmä 13
 **Tila:** Elokuvapalvelu
@@ -69,7 +69,7 @@ Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmä
 | FR-10 | #10 | Käyttäjä voi jakaa toivelistan, jonka toinen käyttäjä voi tallentaa | Should | Ei aloitettu |
 | FR-11 | #11 | Käyttäjä näkee muiden ryhmän jäsenten arvostelut elokuvista | Should | Ei aloitettu |
 | FR-12 | #12 | Käyttäjät voivat viestitellä ryhmissä | Should | Ei aloitettu |
-| FR-13 | #13 | Käyttäjä voi hakea ryhmiä ja liittyä tai pyytää liittymistä niihin | Should | Osittain (25.11.): julkisten ryhmien haku nimellä ja liittyminen; liittymispyyntö yksityiseen ryhmään puuttuu |
+| FR-13 | #13 | Käyttäjä voi hakea ryhmiä ja liittyä tai pyytää liittymistä niihin | Should | Toteutettu (25.11.): julkisten ryhmien haku ja suora liittyminen; yksityisen ryhmän haku koko nimellä ja liittymispyyntö, jonka ryhmän ylläpitäjä hyväksyy tai hylkää; kutsulinkit eivät kuulu tähän; Azure-tarkistus kesken |
 | FR-14 | #14 | Sivu näyttää, missä elokuvateattereissa elokuva pyörii | Could | Ei aloitettu |
 
 ¹ **FR-06 muutettu 9.11.2026.** Alkuperäinen muotoilu (myös issuessa #6) oli: "Ei kirjautunut käyttäjä voi arvioida elokuvia (1–5 tähteä) ja kirjautunut voi lisäksi lisätä kommentin." Se oli ristiriidassa lukujen 1, 2 ja 6 kanssa. Tiimi ehdottaa, että ensimmäisessä versiossa arvioi vain kirjautunut käyttäjä ja anonyymi arviointi lisätään tarvittaessa myöhemmin. Asia vahvistetaan asiakkaalta (Q-06).
@@ -164,7 +164,7 @@ Vaatimusta ei merkitä valmiiksi vain siksi, että se toimii kehittäjän omalla
 | ID | Kysymys asiakkaalle | Tila |
 | --- | --- | --- |
 | Q-01 | Pitääkö ryhmällä olla oma toivelista? | Avoin |
-| Q-02 | Voiko ylläpitäjä lähettää käyttäjälle kutsun liittyä ryhmään? | Avoin; ensimmäisessä versiossa ylläpitäjä lisää jäsenen suoraan nimimerkillä (tiimin ehdotus, vahvistettava) |
+| Q-02 | Voiko ylläpitäjä lähettää käyttäjälle kutsun liittyä ryhmään? | Avoin (kutsulinkit/-koodit). Toteutettu: ylläpitäjä lisää jäsenen nimimerkillä tai hyväksyy liittymispyynnön (tiimin ehdotus, vahvistettava) |
 | Q-03 | Pitääkö jäsenen pystyä liittymään ryhmään ilman käyttäjätiliä? | Avoin; tiimin ehdotus: ei |
 | Q-04 | Näytetäänkö vanhat ryhmäviestit ja kuinka kauan niitä säilytetään? | Avoin |
 | Q-05 | Voiko ryhmässä olla useita ylläpitäjiä? | Tiimin ehdotus: kyllä (tietokanta sallii); vahvistettava |
@@ -197,3 +197,4 @@ Muutokset kirjataan dokumentin versiohistoriaan ja GitHubin backlogiin. Asiakas 
 | 0.3 | 9.11.2026 | Projektiryhmä lisätty; roolit tarkennettu; FR-06 tarkennettu (Q-06); vaatimuksiin issue-numerot ja toteutuksen tila; hyväksymiskriteerit 4.1–4.2 kirjoitettu tälle projektille; tietomalli päivitetty toteutuksen mukaiseksi; NFR-06 lisätty; viikkosuunnitelma päivitetty; avoimet kysymykset Q-06–Q-09 lisätty |
 | 0.4 | 23.11.2026 | Toteutuksen tila päivitetty: FR-04 (nimimerkin muutos, tilin poisto) ja FR-06 (arvostelujen kirjoitus); Q-08 ja Q-09 toteutettu tietokannassa tiimin ehdotuksen mukaisesti, asiakkaan vahvistus puuttuu |
 | 0.5 | 25.11.2026 | FR-07 ja FR-13 tila päivitetty (ryhmien luonti, roolit, liittyminen, eroaminen, jäsenten lisäys/poisto); Q-02: väliaikainen ratkaisu kirjattu |
+| 0.6 | 25.11.2026 | FR-13: yksityisen ryhmän haku koko nimellä ja liittymispyynnöt (hyväksyntä/hylkäys) toteutettu; Q-02 päivitetty |

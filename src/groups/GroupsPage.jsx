@@ -6,6 +6,8 @@ import {
   fetchMyGroups,
   fetchPublicGroups,
   createGroup,
+  searchPrivateGroup,
+  requestToJoin,
 } from "./groupApi";
 import "./groups.css";
 
@@ -108,6 +110,102 @@ function CreateGroupForm({ navigate, onUnauthorized }) {
   );
 }
 
+// Find a private group by its full name and ask to join (issue #13).
+function PrivateGroupSearch({ navigate, onUnauthorized }) {
+  const [name, setName] = useState("");
+  const [result, setResult] = useState(null); // { match } after a search
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [requestMessage, setRequestMessage] = useState(null);
+
+  const searchNow = async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    setRequestMessage(null);
+    if (!name.trim()) {
+      setError("Kirjoita ryhmän koko nimi.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      setResult({ match: await searchPrivateGroup(name.trim()) });
+    } catch (err) {
+      if (err.status === 401) onUnauthorized();
+      else setError(err.fields.name || err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ask = async () => {
+    if (busy) return;
+    setBusy(true);
+    setRequestMessage(null);
+    try {
+      await requestToJoin(result.match.id);
+      setResult((r) => ({ match: { ...r.match, request_status: "pending" } }));
+    } catch (err) {
+      if (err.status === 401) onUnauthorized();
+      else setRequestMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const match = result?.match;
+
+  return (
+    <section aria-labelledby="private-title">
+      <h2 id="private-title">Etsi yksityistä ryhmää</h2>
+      <form className="group-search" role="search" onSubmit={searchNow} noValidate>
+        <label htmlFor="private-search">Ryhmän koko nimi</label>
+        <div className="group-search__row">
+          <input id="private-search" type="search" value={name} maxLength={100} disabled={busy}
+            aria-invalid={!!error} aria-describedby={error ? "private-search-msg" : "private-search-hint"}
+            onChange={(e) => { setName(e.target.value); setError(null); }} />
+          <button className="button button--secondary" type="submit" disabled={busy}>Etsi</button>
+        </div>
+        {error ? (
+          <p id="private-search-msg" className="group-error" role="alert">{error}</p>
+        ) : (
+          <p id="private-search-hint" className="group-hint">Yksityinen ryhmä löytyy vain täsmälleen oikealla nimellä (kirjainkoolla ei ole väliä).</p>
+        )}
+      </form>
+      {result && !match && (
+        <p className="group-empty" role="status">Yksityistä ryhmää ei löytynyt tällä nimellä.</p>
+      )}
+      {match && (
+        <ul className="group-list">
+          <li className="group-row" aria-live="polite">
+            <span className="group-row__name">{match.name}</span>
+            <span className="group-role">{VISIBILITY_LABEL.private}</span>
+            {match.my_role ? (
+              <NavLink href={`/groups/${match.id}`} navigate={navigate} className="group-row__action">
+                Avaa ryhmä ({ROLE_LABEL[match.my_role]}) →
+              </NavLink>
+            ) : match.request_status === "pending" ? (
+              <span className="group-row__action group-request-sent" role="status">
+                Pyyntö lähetetty
+              </span>
+            ) : (
+              <span className="group-row__action">
+                {match.request_status === "rejected" && <span className="group-hint">Edellinen pyyntösi hylättiin. </span>}
+                <button className="button" type="button" disabled={busy} onClick={ask}>
+                  {busy ? "Lähetetään…" : "Pyydä liittymistä"}
+                </button>
+              </span>
+            )}
+          </li>
+        </ul>
+      )}
+      {requestMessage && (
+        <p className="message message--error" role="alert">{requestMessage}</p>
+      )}
+    </section>
+  );
+}
+
 // /groups: own groups with roles, creating a group, public groups.
 export default function GroupsPage({ navigate }) {
   const { user, loading: authLoading, logout } = useAuth();
@@ -172,6 +270,7 @@ export default function GroupsPage({ navigate }) {
             <p className="group-hint">Sinusta tulee ryhmän ylläpitäjä.</p>
             <CreateGroupForm navigate={navigate} onUnauthorized={logout} />
           </section>
+          <PrivateGroupSearch navigate={navigate} onUnauthorized={logout} />
         </>
       ) : (
         <p className="group-empty">
