@@ -1,0 +1,46 @@
+/* Group pages. Classes start with group-; buttons/messages reuse .button and .message. */
+.groups-page, .group-page { max-width: 46rem; margin: 2rem auto; }
+.groups-page section, .group-page section { margin-top: 2rem; }
+.groups-page h2, .group-page h2 { font-size: 1.3rem; margin: 0 0 0.75rem; }
+
+.group-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.group-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem; border: 1px solid #8885; border-radius: 8px;
+}
+.group-row__name { font-weight: 600; overflow-wrap: anywhere; }
+.group-row__meta { opacity: 0.75; font-size: 0.9rem; }
+.group-row__remove, .group-row__confirm { margin-left: auto; }
+.group-row__confirm { display: inline-flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.group-role {
+  display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+  border: 1px solid currentColor;
+}
+.group-role--admin { color: #b45309; }
+.group-role--member { opacity: 0.8; }
+
+.group-empty, .group-hint { opacity: 0.8; }
+.group-hint { font-size: 0.9rem; margin: 0.25rem 0 0.75rem; }
+.group-description { white-space: pre-line; overflow-wrap: anywhere; }
+
+.group-form { display: grid; gap: 1rem; max-width: 32rem; }
+.group-field label, .group-visibility legend { display: block; font-weight: 600; margin-bottom: 0.3rem; }
+.group-field input, .group-field textarea, .group-search input {
+  width: 100%; box-sizing: border-box; padding: 0.6rem 0.7rem; font: inherit;
+  border: 1px solid #8887; border-radius: 6px; background: transparent; color: inherit;
+}
+.group-field [aria-invalid="true"] { border-color: #dc2626; }
+.group-optional { font-weight: 400; opacity: 0.7; }
+.group-error { color: #dc2626; font-size: 0.9rem; margin: 0.3rem 0 0; }
+.group-visibility { border: 0; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+.group-visibility label { display: flex; gap: 0.5rem; align-items: flex-start; font-weight: 400; }
+
+.group-search { margin-bottom: 1rem; max-width: 32rem; }
+.group-search label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
+.group-search__row { display: flex; gap: 0.5rem; }
+.group-search__row input { flex: 1; min-width: 0; }
+
+.group-actions { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+.group-confirm { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+.group-confirm p { flex-basis: 100%; margin: 0; }

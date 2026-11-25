@@ -1,7 +1,8 @@
 # Ryhmät: ohje toteuttajalle
 
-Tämä kuvaa tietokannan valmiit säännöt (migraatiot 002 ja 003), joiden päälle ryhmien API ja käyttöliittymä
-rakennetaan. Ryhmien API- ja UI-koodia ei ole vielä repositoriossa; kollegan työtä ei ole tarkistettu.
+Tämä kuvaa tietokannan säännöt (migraatiot 002 ja 003), joiden päälle ryhmien API ja käyttöliittymä on rakennettu.
+Ensimmäinen versio (luonti, liittyminen, roolit, eroaminen, jäsenten lisäys/poisto) on haarassa `feature/groups`:
+`api/models/Group.js` noudattaa alla olevaa lukitusjärjestystä, ja se on hyvä malli jatkokehitykselle.
 Sopikaa API-sopimus (`docs/api.md`) ennen kuin lisäätte uusia tauluja (viestit, kutsut, liittymispyynnöt).
 
 ## Taulut

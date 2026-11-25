@@ -22,6 +22,14 @@ Kehityksessä perusosoite on `VITE_API_URL` (oletus `http://localhost:3000`), tu
 | GET | `/api/auth/me` | Kirjautunut käyttäjä (vaatii tokenin) | #4 |
 | PATCH | `/api/auth/me` | Nimimerkin muutos (vaatii tokenin) | #4 |
 | DELETE | `/api/auth/me` | Tilin poisto salasanalla vahvistaen (vaatii tokenin) | #4 |
+| GET | `/api/groups` | Julkiset ryhmät (haku `q`, sivutus) | #13 |
+| GET | `/api/groups/mine` | Omat ryhmät ja oma rooli (vaatii tokenin) | #7 |
+| GET | `/api/groups/:id` | Ryhmä, oma rooli ja jäsenet (token valinnainen) | #7 |
+| POST | `/api/groups` | Ryhmän luonti; luojasta tulee ylläpitäjä (vaatii tokenin) | #7 |
+| POST | `/api/groups/:id/join` | Liittyminen julkiseen ryhmään (vaatii tokenin) | #13 |
+| DELETE | `/api/groups/:id/membership` | Oma eroaminen ryhmästä (vaatii tokenin) | #7 |
+| POST | `/api/groups/:id/members` | Ylläpitäjä lisää jäsenen nimimerkillä | #7 |
+| DELETE | `/api/groups/:id/members/:userId` | Ylläpitäjä poistaa tavallisen jäsenen | #7 |
 
 ## GET /api/movies
 
@@ -211,6 +219,35 @@ tietokantaan: arvostelun lisäys lukitsee käyttäjärivin viiteavaimen kautta. 
 poisto anonymisoi sen; jos poisto valmistuu ensin, lisäys epäonnistuu (`401`). Poisto lukitsee ensin käyttäjän ryhmät
 (`id`-järjestyksessä) ja sitten käyttäjärivin, samassa järjestyksessä kuin ryhmätriggerit (migraatio 003).
 
+## Ryhmät (`/api/groups`)
+
+Toimija päätellään aina tokenista (`req.userId`). Rooli luetaan kyseisen ryhmän `group_members`-rivistä; rungon
+kentät kuten `role`, `user_id`, `created_by` tai `members` jätetään huomiotta. Jäsenyyttä muuttavat reitit lukitsevat
+ensin ryhmän rivin ja tarkistavat oikeuden samassa transaktiossa (ks. [ryhmat-kehittajalle.md](ryhmat-kehittajalle.md)).
+Säännöt ylläpitäjästä ja tyhjästä ryhmästä hoitaa tietokanta (migraatio 003).
+
+**Ryhmä** (`group`): `{ id, name, description, visibility, created_at, member_count }`.
+**Jäsen** (`members[]`): `{ id, nickname, role, joined_at }` – vain julkiset tilitiedot, ei sähköpostia.
+**Ryhmänäkymä** (GET `/:id`, luonti, liittyminen): `{ group, my_role, members }`; `my_role` on `"admin"`, `"member"` tai `null`.
+
+| Pyyntö | Onnistuu | Virheet |
+| --- | --- | --- |
+| `GET /api/groups?q=&limit=&offset=` | `200 { items, limit, offset }` vain julkiset ryhmät, uusimmat ensin | `400` parametrit |
+| `GET /api/groups/mine` | `200 { items: [ryhmä + my_role + joined_at] }` | `401` |
+| `GET /api/groups/:id` (token valinnainen) | `200` ryhmänäkymä | `404` jos ryhmää ei ole **tai se on yksityinen eikä kysyjä ole jäsen**; `401` jos lähetetty token on kelvoton |
+| `POST /api/groups` `{ name, description?, visibility }` | `201` ryhmänäkymä, `my_role: "admin"` | `400` `fields.name` (2–100), `fields.description` (≤1000), `fields.visibility` (`public`/`private`, oletus `private`) |
+| `POST /api/groups/:id/join` | `201` liittyi (`member`), `200` oli jo jäsen (yksi jäsenyys) | `404` jos ryhmää ei ole tai se on yksityinen |
+| `DELETE /api/groups/:id/membership` | `204` | `404` ei jäsen / ei ryhmää |
+| `POST /api/groups/:id/members` `{ nickname }` | `201 { member }` (`member`-rooli) | `403` ei ylläpitäjä; `404` + `fields.nickname` käyttäjää ei löydy; `409` + `fields.nickname` jo jäsen; `400` tyhjä |
+| `DELETE /api/groups/:id/members/:userId` | `204` | `403` ei ylläpitäjä tai kohde on ylläpitäjä; `400` itsensä poisto (käytä eroamista); `404` ei jäsen |
+
+- **Yksityiseen ryhmään** ei voi liittyä suoraan. Ensimmäisessä versiossa ylläpitäjä lisää jäsenen **tarkalla nimimerkillä**
+  (kirjainkoko ei ratkaise, osittainen nimi ei kelpaa). Kutsut ja liittymispyynnöt (Q-02, FR-13) ovat jatkotyötä.
+  Ulkopuoliselle yksityinen ryhmä on `404`, jotta sen olemassaolo ei paljastu.
+- **Eroaminen:** kun viimeinen ylläpitäjä eroaa, pisimpään ollut jäsen (`joined_at`, tasatilanteessa pienempi
+  `user_id`) nousee ylläpitäjäksi; kun viimeinen jäsen eroaa, ryhmä poistetaan.
+- **Ylläpitäjä** voi poistaa vain tavallisia jäseniä. Roolien vaihto käsin ei kuulu tähän versioon.
+
 ## Virheet
 
 ```json
@@ -230,6 +267,7 @@ Lomakkeiden virheissä mukana on `fields`, jonka tekstit näytetään kentän vi
 | Virheellinen parametri tai lomakkeen kenttä, tietokannan CHECK/NOT NULL | 400 (+ `fields`) |
 | Ei kirjautunut, väärä tunnus tai salasana, kelvoton token, poistettu tili | 401 |
 | Väärä vahvistussalasana (tilin poisto) | 403 (+ `fields.password`) |
+| Ryhmän toiminto ilman oikeutta (ei ylläpitäjä) | 403 |
 | Ei löydy | 404 |
 | Jo olemassa (UNIQUE), käytössä oleva rivi (RESTRICT) | 409 (+ `constraint`; sähköposti/nimimerkki myös `fields`) |
 | Palvelimen virhe | 500, yleinen viesti; yksityiskohdat vain palvelimen lokiin |
@@ -238,7 +276,8 @@ Lomakkeiden virheissä mukana on `fields`, jonka tekstit näytetään kentän vi
 
 ## Testit
 
-`api`-kansiossa `npm test` ajaa integraatiotestit: `auth.test.js`, `reviews.test.js`, `account.test.js`
-ja `concurrency.test.js` (kaksi tietokantayhteyttä: ryhmätriggerit ja tilin poisto vs. kirjoitus).
+`api`-kansiossa `npm test` ajaa integraatiotestit: `auth.test.js`, `reviews.test.js`, `account.test.js`,
+`groups.test.js` (ryhmät API:n kautta, myös rinnakkaiset eroamiset) ja `concurrency.test.js`
+(kaksi tietokantayhteyttä: ryhmätriggerit ja tilin poisto vs. kirjoitus).
 Ne tarvitsevat erillisen, migroidun PostgreSQL-testitietokannan (`DB_*`-muuttujat, migraatiot 001–003).
 **Älä aja testejä Azuren `cinema_db`:hen.** Testidata poistetaan lopuksi.
