@@ -20,25 +20,30 @@ function Link({ href, navigate, children, ...props }) {
 }
 
 // Sends guests to login and comes back here afterwards.
+// onError: a 401 (expired token or deleted account) signs the user out, which brings them to
+// the login page through the effect above; other errors are shown with setError.
 function useRequireLogin(navigate, path) {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   useEffect(() => {
     if (!loading && !user) navigate(loginPathFor(path));
   }, [loading, user, navigate, path]);
-  return { user, loading };
+  const onError = (err, setError) => (err.status === 401 ? logout() : setError(err.message));
+  return { user, loading, onError };
 }
 
 const countLabel = (n) => (n === 1 ? "1 elokuva" : `${n} elokuvaa`);
 
 // /watchlists
 export function WatchlistsPage({ navigate }) {
-  const { user, loading } = useRequireLogin(navigate, "/watchlists");
+  const { user, loading, onError } = useRequireLogin(navigate, "/watchlists");
   const [lists, setLists] = useState(null);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (user) api.getLists().then(setLists).catch((e) => { setError(e.message); setLists([]); });
+    if (user) api.getLists().then(setLists).catch((e) => { onError(e, setError); setLists([]); });
+    // onError is recreated on every render; reload only when the user changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const onCreate = async (e) => {
@@ -49,7 +54,7 @@ export function WatchlistsPage({ navigate }) {
       setLists((l) => [{ ...created, movie_count: 0 }, ...(l || [])]);
       setName("");
     } catch (err) {
-      setError(err.message);
+      onError(err, setError);
     }
   };
 
@@ -59,7 +64,7 @@ export function WatchlistsPage({ navigate }) {
       await api.deleteList(list.id);
       setLists((l) => l.filter((x) => x.id !== list.id));
     } catch (err) {
-      setError(err.message);
+      onError(err, setError);
     }
   };
 
@@ -117,12 +122,13 @@ export function WatchlistsPage({ navigate }) {
 
 // /watchlists/:id
 export function WatchlistPage({ id, navigate }) {
-  const { user, loading } = useRequireLogin(navigate, `/watchlists/${id}`);
+  const { user, loading, onError } = useRequireLogin(navigate, `/watchlists/${id}`);
   const [list, setList] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (user) api.getList(id).then(setList).catch((e) => setError(e.message));
+    if (user) api.getList(id).then(setList).catch((e) => onError(e, setError));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, id]);
 
   const onRemove = async (movieId) => {
@@ -130,7 +136,7 @@ export function WatchlistPage({ id, navigate }) {
       await api.removeMovie(id, movieId);
       setList((l) => ({ ...l, movies: l.movies.filter((m) => m.id !== movieId) }));
     } catch (err) {
-      setError(err.message);
+      onError(err, setError);
     }
   };
 
@@ -201,13 +207,14 @@ export function WatchlistPage({ id, navigate }) {
 
 // Used on the movie page: <AddToWatchlist movieId={movie.data.id} />
 export function AddToWatchlist({ movieId }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [lists, setLists] = useState([]);
   const [selected, setSelected] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (user) api.getLists().then(setLists).catch(() => {});
+    if (user) api.getLists().then(setLists).catch((err) => { if (err.status === 401) logout(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   if (!user || lists.length === 0) return null;
@@ -217,7 +224,8 @@ export function AddToWatchlist({ movieId }) {
       await api.addMovie(selected, movieId);
       setMessage("Lisätty listalle!");
     } catch (err) {
-      setMessage(err.message);
+      if (err.status === 401) logout();
+      else setMessage(err.message);
     }
   };
 

@@ -18,8 +18,12 @@ async function call(path, { method = "GET", body } = {}) {
     });
     return data;
   } catch (error) {
-    if (!error.response) throw new Error("Palvelimeen ei saatu yhteyttä.");
-    throw new Error(error.response.data?.error?.message || "Jokin meni pieleen.");
+    // status lets the pages sign out on 401 (expired token or deleted account).
+    if (!error.response) throw Object.assign(new Error("Palvelimeen ei saatu yhteyttä."), { status: 0 });
+    throw Object.assign(
+      new Error(error.response.data?.error?.message || "Jokin meni pieleen."),
+      { status: error.response.status },
+    );
   }
 }
 

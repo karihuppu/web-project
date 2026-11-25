@@ -22,6 +22,12 @@ Kehityksessä perusosoite on `VITE_API_URL` (oletus `http://localhost:3000`), tu
 | GET | `/api/auth/me` | Kirjautunut käyttäjä (vaatii tokenin) | #4 |
 | PATCH | `/api/auth/me` | Nimimerkin muutos (vaatii tokenin) | #4 |
 | DELETE | `/api/auth/me` | Tilin poisto salasanalla vahvistaen (vaatii tokenin) | #4 |
+| GET | `/api/watchlists` | Omat toivelistat + elokuvien määrä (vaatii tokenin) | #5 |
+| POST | `/api/watchlists` | Toivelistan luonti (vaatii tokenin) | #5 |
+| GET | `/api/watchlists/:id` | Oma toivelista elokuvineen (vaatii tokenin) | #5 |
+| DELETE | `/api/watchlists/:id` | Oman toivelistan poisto (vaatii tokenin) | #5 |
+| POST | `/api/watchlists/:id/movies` | Elokuva omalle listalle (vaatii tokenin) | #5 |
+| DELETE | `/api/watchlists/:id/movies/:movieId` | Elokuva pois omalta listalta (vaatii tokenin) | #5 |
 | GET | `/api/groups` | Julkiset ryhmät (haku `q`, sivutus) | #13 |
 | GET | `/api/groups/mine` | Omat ryhmät ja oma rooli (vaatii tokenin) | #7 |
 | GET | `/api/groups/:id` | Ryhmä, oma rooli ja jäsenet (token valinnainen) | #7 |
@@ -224,6 +230,24 @@ tietokantaan: arvostelun lisäys lukitsee käyttäjärivin viiteavaimen kautta. 
 poisto anonymisoi sen; jos poisto valmistuu ensin, lisäys epäonnistuu (`401`). Poisto lukitsee ensin käyttäjän ryhmät
 (`id`-järjestyksessä) ja sitten käyttäjärivin, samassa järjestyksessä kuin ryhmätriggerit (migraatio 003).
 
+## Toivelistat (`/api/watchlists`)
+
+Kaikki reitit vaativat tokenin. Omistaja päätellään aina tokenista; toisen käyttäjän lista vastaa `404`
+(ei paljasteta, onko lista olemassa). Pyynnön rungon `user_id` jätetään huomiotta.
+
+| Pyyntö | Onnistuu | Virheet |
+| --- | --- | --- |
+| `GET /api/watchlists` | `200 { watchlists: [{ id, name, created_at, updated_at, movie_count }] }` uusin ensin | `401` |
+| `POST /api/watchlists` `{ name }` | `201 { watchlist: { id, name, created_at, updated_at } }` | `400` nimi 1–100 merkkiä (reunojen välilyönnit poistetaan); `409` sama nimi samalla käyttäjällä (kirjainkoko ei erota) |
+| `GET /api/watchlists/:id` | `200 { watchlist: { id, name, created_at, updated_at, movies: [...] } }` | `400` virheellinen id; `404` ei omaa listaa |
+| `DELETE /api/watchlists/:id` | `204` (listan elokuvarivit poistuvat, elokuvat eivät) | `400`, `404` |
+| `POST /api/watchlists/:id/movies` `{ movie_id }` | `201 { item: { watchlist_id, movie_id, added_at } }` | `400` virheellinen id; `404` listaa tai elokuvaa ei ole; `409` elokuva on jo listalla |
+| `DELETE /api/watchlists/:id/movies/:movieId` | `204` | `400`; `404` listaa ei ole tai elokuva ei ole listalla |
+
+- `movies[]`: `{ id, tmdb_id, title, original_title, release_date ('YYYY-MM-DD'), runtime_minutes, poster_path, tmdb_vote_average, added_at }`, viimeksi lisätty ensin.
+- Id:t ovat positiivisia kokonaislukuja 1–2147483647 (sama sääntö kuin muualla API:ssa); `movie_id` voi olla JSON-luku tai numeromerkkijono.
+- Tilin poisto poistaa käyttäjän listat (CASCADE).
+
 ## Ryhmät (`/api/groups`)
 
 Toimija päätellään aina tokenista (`req.userId`). Rooli luetaan kyseisen ryhmän `group_members`-rivistä; rungon
@@ -309,7 +333,7 @@ Lomakkeiden virheissä mukana on `fields`, jonka tekstit näytetään kentän vi
 ## Testit
 
 `api`-kansiossa `npm test` ajaa integraatiotestit: `auth.test.js`, `reviews.test.js`, `account.test.js`,
-`groups.test.js` (ryhmät API:n kautta, myös rinnakkaiset eroamiset), `group-requests.test.js`
+`watchlists.test.js` (toivelistat ja oikeudet), `groups.test.js` (ryhmät API:n kautta, myös rinnakkaiset eroamiset), `group-requests.test.js`
 (yksityisen ryhmän haku ja liittymispyynnöt, myös rinnakkainen hyväksyntä ja lisäys) ja `concurrency.test.js`
 (kaksi tietokantayhteyttä: ryhmätriggerit ja tilin poisto vs. kirjoitus).
 Ne tarvitsevat erillisen, migroidun PostgreSQL-testitietokannan (`DB_*`-muuttujat, migraatiot 001–004).

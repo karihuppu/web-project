@@ -32,9 +32,19 @@ export async function findOwned(id, userId) {
   return rows[0] ?? null;
 }
 
+// Same movie fields and formats as /api/movies (api/models/Movie.js):
+// release_date as 'YYYY-MM-DD' text (no time zone shift), tmdb_vote_average as a number.
 export async function moviesOf(id) {
   const { rows } = await pool.query(
-    `SELECT m.*, wm.added_at
+    `SELECT m.id,
+            m.tmdb_id,
+            m.title,
+            m.original_title,
+            m.release_date::text AS release_date,
+            m.runtime_minutes,
+            m.poster_path,
+            m.tmdb_vote_average::float8 AS tmdb_vote_average,
+            wm.added_at
      FROM watchlist_movies wm
      JOIN movies m ON m.id = wm.movie_id
      WHERE wm.watchlist_id = $1

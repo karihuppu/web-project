@@ -1,11 +1,18 @@
 import * as Watchlist from "../models/Watchlist.js";
+import { parsePositiveInt } from "../middleware/validation.js";
 
 const fail = (res, status, message) =>
   res.status(status).json({ error: { message, status } }); // matches the format your frontend parses
 
+// Same rules as the rest of the API: digits only, 1..2147483647 (PostgreSQL INTEGER).
+// A larger id used to reach the database and answer 500. JSON numbers in the body are accepted too.
 const toId = (v) => {
-  const n = Number(v);
-  return Number.isInteger(n) && n > 0 ? n : null;
+  const value = typeof v === "number" && Number.isInteger(v) ? String(v) : v;
+  try {
+    return parsePositiveInt(value, "id");
+  } catch {
+    return null;
+  }
 };
 
 export async function list(req, res, next) {
