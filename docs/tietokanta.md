@@ -288,6 +288,37 @@ taulun `group_join_requests` ja triggerin, joka sulkee odottavan pyynnön, kun j
 3. **Järjestys:** aja migraatio 004 **ennen** julkaisua. Uusi backend käyttää taulua `group_join_requests`;
    ilman sitä yksityisen ryhmän haku ja pyynnöt vastaisivat 500. Vanha versio toimii migraation 004 kanssa normaalisti.
 
+### 5.5 Julisteet ja kuvaukset TMDB:stä (issue #3)
+
+Käsin ajettava komento täydentää **jo tietokannassa olevat** elokuvat (`tmdb_id`) TMDB:n Movie Details -rajapinnasta
+(`GET /3/movie/{tmdb_id}`). Uusia elokuvia ei lisätä, eikä mitään poisteta; `movies.id`, arvostelut ja toivelistat säilyvät.
+
+- `poster_path`: tallennetaan, jos TMDB palauttaa kelvollisen suhteellisen polun (esim. `/abc123.jpg`).
+  Puuttuva tai kelvoton arvo ei koskaan tyhjennä olemassa olevaa julistetta.
+- `overview`: täytetään **vain tyhjä** kuvaus, ensin `fi-FI`, sitten `en-US`. Olemassa olevaa tekstiä ei korvata.
+- Virhe, aikakatkaisu (10 s) tai tyhjä vastaus → elokuvan tiedot jäävät ennalleen; lopussa yhteenveto
+  (päivitetty / ennallaan / virheet). Virheiden jälkeen komennon voi ajaa uudelleen.
+- `tmdb_synced_at` päivittyy, kun elokuvaan kirjoitetaan.
+
+Tarvitaan TMDB:n **API Read Access Token** (TMDB-tili → Settings → API) muuttujassa `TMDB_READ_TOKEN`.
+Sovellus itse ei tarvitse tokenia; sitä ei lisätä App Settingsiin eikä `VITE_*`-muuttujaan.
+
+```powershell
+cd api
+# DB_* kuten luvussa 5.1 (Azure) tai paikallinen .env
+$tok = Read-Host 'TMDB read token' -AsSecureString
+$env:TMDB_READ_TOKEN = [System.Net.NetworkCredential]::new('', $tok).Password
+
+npm run tmdb:sync-movie-details -- --dry-run                     # näyttää muutokset, ei kirjoita
+npm run tmdb:sync-movie-details -- --confirm=cinema_db           # kirjoittaa (Azure vaatii --confirm)
+npm run tmdb:sync-movie-details -- --dry-run --only=603,27205    # vain nämä TMDB-id:t
+
+Remove-Item Env:TMDB_READ_TOKEN
+```
+
+Tyhjät kuvaukset näkee etukäteen kyselyllä:
+`SELECT id, tmdb_id, title FROM movies WHERE overview IS NULL OR btrim(overview) = '' ORDER BY id;`
+
 ## 6. Demodata
 
 `demo_seed.sql` lisää 9 genreä, 6 elokuvaa (oikeat TMDB-tunnisteet), 3 demokäyttäjää
