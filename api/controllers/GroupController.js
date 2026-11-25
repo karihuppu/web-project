@@ -1,4 +1,8 @@
 import {
+  findPrivateGroupByName,
+  createJoinRequest,
+  listPendingRequests,
+  decideJoinRequest,
   createGroup,
   findGroup,
   listMembers,
@@ -196,4 +200,98 @@ const kickMember = async (req, res, next) => {
   }
 }
 
-export { create, mine, listPublic, show, join, leave, addMember, kickMember }
+// GET /api/groups/private?name=<full name> (login required)
+// Exact name, letter case and surrounding spaces ignored. Only private groups; the public search is separate.
+// -> 200 { match: { id, name, visibility, my_role, request_status } | null }
+const searchPrivate = async (req, res, next) => {
+  try {
+    const name = typeof req.query.name === 'string' ? req.query.name.trim() : ''
+    if (!name || length(name) > NAME_MAX) {
+      throw httpError(400, 'Tarkista ryhmän nimi.', { name: 'Kirjoita ryhmän koko nimi.' })
+    }
+    res.status(200).json({ match: await findPrivateGroupByName(name, req.userId) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// POST /api/groups/:id/requests -> 201 { request } (new) or 200 { request } (already pending)
+const requestToJoin = async (req, res, next) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id, 'id')
+    const result = await createJoinRequest(groupId, req.userId)
+    switch (result.status) {
+      case 'not_found':
+        throw groupNotFound()
+      case 'public':
+        throw httpError(400, 'Julkiseen ryhmään voi liittyä suoraan.')
+      case 'member':
+        throw httpError(409, 'Olet jo tämän ryhmän jäsen.')
+      default:
+        res.status(result.status === 'created' ? 201 : 200).json({ request: result.request })
+    }
+  } catch (error) {
+    if (error.code === '23503') return next(signedOut()) // account deleted meanwhile
+    next(error)
+  }
+}
+
+// GET /api/groups/:id/requests (admin of this group) -> 200 { items: [{ id, created_at, user: { id, nickname } }] }
+const listRequests = async (req, res, next) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id, 'id')
+    const result = await listPendingRequests(groupId, req.userId)
+    if (result.status === 'not_found' || result.status === 'hidden') throw groupNotFound()
+    if (result.status === 'forbidden') throw onlyAdmin()
+    res.status(200).json({ items: result.items })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// POST /api/groups/:id/requests/:requestId/approve | reject (admin of this group)
+const decide = (approve) => async (req, res, next) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id, 'id')
+    const requestId = parsePositiveInt(req.params.requestId, 'requestId')
+    const result = await decideJoinRequest(groupId, req.userId, requestId, approve)
+    switch (result.status) {
+      case 'not_found':
+      case 'hidden':
+        throw groupNotFound()
+      case 'forbidden':
+        throw onlyAdmin()
+      case 'request_not_found':
+        throw httpError(404, 'Liittymispyyntöä ei löytynyt.')
+      case 'already_decided':
+        throw httpError(409, 'Pyyntö on jo käsitelty.')
+      case 'approved':
+        res.status(200).json({ status: 'approved', member: result.member })
+        break
+      default:
+        res.status(200).json({ status: 'rejected' })
+    }
+  } catch (error) {
+    if (error.code === '23503') return next(httpError(404, 'Liittymispyyntöä ei löytynyt.'))
+    next(error)
+  }
+}
+
+const approveRequest = decide(true)
+const rejectRequest = decide(false)
+
+export {
+  create,
+  mine,
+  listPublic,
+  show,
+  join,
+  leave,
+  addMember,
+  kickMember,
+  searchPrivate,
+  requestToJoin,
+  listRequests,
+  approveRequest,
+  rejectRequest,
+}

@@ -10,7 +10,8 @@
 }
 .group-row__name { font-weight: 600; overflow-wrap: anywhere; }
 .group-row__meta { opacity: 0.75; font-size: 0.9rem; }
-.group-row__remove, .group-row__confirm { margin-left: auto; }
+.group-row__remove, .group-row__confirm, .group-row__action { margin-left: auto; }
+.group-request-sent { font-weight: 600; color: #15803d; }
 .group-row__confirm { display: inline-flex; flex-wrap: wrap; gap: 0.5rem; }
 
 .group-role {
