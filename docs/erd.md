@@ -1,10 +1,10 @@
 # ERD – tietokannan rakenne
 
-**Lähde:** migraatiot [001_users_movies_reviews.sql](../api/db/migrations/001_users_movies_reviews.sql), [002_watchlists_groups.sql](../api/db/migrations/002_watchlists_groups.sql) ja [003_group_admin_concurrency.sql](../api/db/migrations/003_group_admin_concurrency.sql) (haara `feature/account`, 23.11.2026). Migraatio 003 muuttaa vain triggereitä; taulut ja sarakkeet ovat samat kuin 002:n jälkeen.
+**Lähde:** migraatiot [001_users_movies_reviews.sql](../api/db/migrations/001_users_movies_reviews.sql), [002_watchlists_groups.sql](../api/db/migrations/002_watchlists_groups.sql) [003_group_admin_concurrency.sql](../api/db/migrations/003_group_admin_concurrency.sql) ja [004_private_group_requests.sql](../api/db/migrations/004_private_group_requests.sql) (päivitetty 25.11.2026, haara `feature/group-requests`). Migraatio 003 muuttaa vain triggereitä; 004 lisää taulun `group_join_requests` ja yksityisen ryhmän nimen yksilöllisyyden.
 
 > Kaavio on piirretty **lähdekoodin perusteella**. Azuren `cinema_db`:tä ei ole tarkistettu: ei tiedetä, onko migraatiot ajettu siellä. Rakenne on tarkistettu ajamalla migraatiot väliaikaiseen paikalliseen PostgreSQL 18.6 -kantaan.
 
-Kaaviossa on vain nykyinen toteutus. Suunnitellut taulut (ryhmäviestit, liittymispyynnöt, jaetut listat, teatterit) puuttuvat tarkoituksella.
+Kaaviossa on vain nykyinen toteutus. Suunnitellut taulut (ryhmäviestit, kutsut, jaetut listat, teatterit) puuttuvat tarkoituksella.
 
 ## Kaavio
 
@@ -20,6 +20,19 @@ erDiagram
     users |o--o{ groups : "loi (SET NULL)"
     groups ||--o{ group_members : "jäsenet (CASCADE)"
     users ||--o{ group_members : "jäsenyydet (CASCADE)"
+    groups ||--o{ group_join_requests : "pyynnöt (CASCADE)"
+    users ||--o{ group_join_requests : "pyytää (CASCADE)"
+    users |o--o{ group_join_requests : "käsitteli (SET NULL)"
+
+    group_join_requests {
+        int id PK
+        int group_id FK
+        int user_id FK "yksi odottava per ryhmä ja käyttäjä"
+        text status "pending, approved tai rejected"
+        timestamptz created_at
+        timestamptz decided_at "NULL vain odottavalla"
+        int decided_by FK "NULL sallittu"
+    }
 
     users {
         int id PK
@@ -166,6 +179,14 @@ Migraatio 003 korjaa tämän. Testattu kahdella itsenäisellä yhteydellä ([con
 DBeaverissa), PostgreSQL voi katkaista deadlockin (`40P01`, API vastaa 503); data ei silloinkaan riko sääntöjä.
 `TRUNCATE` ohittaa rivitriggerit, eikä sitä käytetä sovelluksessa. Ohjeet ryhmien toteuttajalle: [ryhmat-kehittajalle.md](ryhmat-kehittajalle.md).
 
+### Liittymispyynnöt (migraatio 004)
+- Pyyntö on aina olemassa olevaan ryhmään (`group_id`) ja olemassa olevalta käyttäjältä (`user_id`); molemmat CASCADE.
+- `status`: `pending` → `approved` tai `rejected`; `decided_at` on asetettu täsmälleen silloin, kun pyyntö on käsitelty (CHECK).
+- Käsitellyt pyynnöt jäävät historiaan; uusi odottava pyyntö on mahdollinen hylkäyksen jälkeen.
+- Trigger `group_members_close_join_request` (`AFTER INSERT ON group_members`) sulkee käyttäjän odottavan pyynnön,
+  kun hänestä tulee jäsen millä tahansa tavalla.
+- Yksityisen ryhmän nimi on yksilöllinen normalisoituna; julkisilla ryhmillä ei ole nimirajoitetta.
+
 ### Indeksit
 
 | Indeksi | Käyttö |
@@ -177,6 +198,10 @@ DBeaverissa), PostgreSQL voi katkaista deadlockin (`40P01`, API vastaa 503); dat
 | `watchlists_user_name_uq (user_id, lower(name))` | käyttäjän listat |
 | `watchlist_movies_movie_id_idx (movie_id)` | RESTRICT-tarkistus elokuvaa poistettaessa |
 | `groups_created_by_idx (created_by)` | SET NULL käyttäjää poistettaessa |
+| `groups_private_name_uq (lower(btrim(name))) WHERE visibility = 'private'` | yksityisen ryhmän nimi yksilöllinen + haku koko nimellä |
+| `group_join_requests_pending_uq (group_id, user_id) WHERE status = 'pending'` | yksi odottava pyyntö per ryhmä ja käyttäjä |
+| `group_join_requests_group_pending_idx (group_id, created_at) WHERE status = 'pending'` | ylläpitäjän pyyntölista |
+| `group_join_requests_user_idx (user_id)`, `…_decided_by_idx (decided_by)` | käyttäjän pyynnöt, CASCADE/SET NULL tilin poistossa |
 | `group_members_user_id_idx (user_id)` | käyttäjän ryhmät, CASCADE käyttäjää poistettaessa |
 
 Nimihaku (`ILIKE '%…%'`) ei käytä indeksiä; pienellä datamäärällä se riittää.

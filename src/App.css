@@ -335,6 +335,24 @@
   gap: 20px;
   padding: 26px 0;
 }
+.site-footer__credits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 0 0 26px;
+}
+.site-footer__credits p {
+  margin: 0;
+}
+.tmdb-credit__logo {
+  display: inline-flex;
+  line-height: 0;
+}
+.tmdb-credit__logo img {
+  height: 12px;
+  width: auto;
+}
 .movie-page {
   padding: 36px 0 75px;
 }

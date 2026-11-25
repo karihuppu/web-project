@@ -31,7 +31,8 @@ Tarkistustavat: **[auto]** toistettava komento (`npm run lint`, `npm run build`,
 | Luonnokset vanhentuneen tokenin jälkeen, käyttäjäkohtaisesti | ✅ [selain] | `src/reviews/`, `src/auth/useAuth.js` |
 | Mobiili 390 px: ei vaakavieritystä (`/`, elokuva, tili, kirjautuminen, rekisteröinti) | ✅ [selain] | CSS |
 | Julisteet | 🧱 näytetään, jos `poster_path` on; demodatassa ei ole | `src/App.jsx` |
-| Toivelistat, ryhmät | ❌ | – |
+| Ryhmät: Omat ryhmät, luonti, julkiset ryhmät + haku, ryhmän sivu, liittyminen, rooli, eroaminen, ylläpitäjä lisää/poistaa jäsenen | ✅ [selain] (25.11., haara `feature/groups`) | `src/groups/` |
+| Toivelistat | ❌ | – |
 
 Huomiot: ei frontend-yksikkötestejä; selainkulku tarkistettiin skriptillä, mutta sitä ei ole vielä lisätty repositorioon.
 
@@ -43,7 +44,8 @@ Huomiot: ei frontend-yksikkötestejä; selainkulku tarkistettiin skriptillä, mu
 | `POST /api/auth/register`, `/login`, `GET /me` | ✅ [auto] |
 | `PATCH /api/auth/me` (nimimerkki), `DELETE /api/auth/me` (tilin poisto) | ✅ [auto] |
 | Oma arvostelu: `POST /reviews`, `GET/PUT/DELETE /review` | ✅ [auto] |
-| Toivelistat, ryhmät | ❌ (ryhmät: kollegan työ, koodia ei ole jaettu) |
+| Ryhmät `/api/groups…` (8 reittiä, ks. api.md) | ✅ [auto] (haara `feature/groups`) |
+| Toivelistat | ❌ |
 
 - `requireAuth` tarkistaa JWT:n **ja** että tili on yhä olemassa; tietokantavirhe ei näy 401:nä.
 - Kirjoitukset nojaavat tietokannan viiteavaimiin ja lukkoihin, koska tili voi poistua middleware-tarkistuksen jälkeen.
@@ -70,7 +72,9 @@ Takuu: READ COMMITTED. Muilla eristystasoilla trigger kieltäytyy (`40001`).
 | `api/tests/account.test.js` | 12 | nimimerkki, tilin poisto, seuraukset, vanha token, DB-vika ≠ 401 |
 | `api/tests/concurrency.test.js` | 11 | ryhmät kahdella yhteydellä, tilin poisto vs. arvostelu |
 
-Yhteensä 42/42 [auto], erillisessä `postgres:18.6`-kannassa. Testit eivät aja GitHub Actionsissa (vaativat PostgreSQL:n).
+| `api/tests/groups.test.js` | 13 | ryhmät API:n kautta: luonti, liittyminen, oikeudet, yksityinen ryhmä, eroaminen, rinnakkaiset eroamiset ja tilin poisto |
+
+Yhteensä 55/55 [auto], erillisessä `postgres:18.6`-kannassa. Testit eivät aja GitHub Actionsissa (vaativat PostgreSQL:n).
 
 ## 5. Azure ja CI/CD
 
@@ -84,11 +88,12 @@ Yhteensä 42/42 [auto], erillisessä `postgres:18.6`-kannassa. Testit eivät aja
 | --- | --- |
 | FR-01 haku | 🟡 omasta kannasta; TMDB-haku ❌ |
 | FR-02 ajankohtaiset | 🟡 uusimmat; suosituimmat ❌ |
-| FR-03 tiedot ja kuvat | 🟡 tiedot ✅, kuvat odottavat TMDB:tä |
+| FR-03 tiedot ja kuvat | ✅ paikallisesti: julisteet ja puuttuvat kuvaukset TMDB:stä komennolla `tmdb:sync-movie-details` (olemassa olevat elokuvat); TMDB-attribuutio |
 | FR-04 tili | ✅ paikallisesti (rekisteröinti, kirjautuminen, nimimerkki, poisto); Azure-tarkistus kesken |
 | FR-05 toivelistat | 🧱 |
 | FR-06 arviointi | ✅ kirjautuneille; anonyymi arviointi odottaa päätöstä (Q-06) |
-| FR-07 ryhmät | 🧱 + korjatut säännöt; API/UI kollegalla (ei tarkistettu) |
+| FR-07 ryhmät | ✅ paikallisesti: luonti, roolit, jäsenten lisäys/poisto, eroaminen; roolien vaihto käsin ❌ |
+| FR-13 ryhmien haku ja liittyminen | 🟡 julkiset ryhmät: haku + liittyminen ✅; liittymispyyntö yksityiseen ❌ |
 | FR-08 mobiili | ✅ 390 px [selain]; oikeilla laitteilla ei testattu |
 | FR-09 genre | ✅ omalla datalla |
 | FR-10–FR-14 | ❌ |

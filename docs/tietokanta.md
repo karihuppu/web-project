@@ -12,6 +12,7 @@ Graafinen ERD ja arkkitehtuurikaavio tehdään, kun rakenne on hyväksytty.
 | `api/db/migrations/001_users_movies_reviews.sql` | `users`, `movies`, `genres`, `movie_genres`, `reviews` |
 | `api/db/migrations/002_watchlists_groups.sql` | `watchlists`, `watchlist_movies`, `groups`, `group_members` |
 | `api/db/migrations/003_group_admin_concurrency.sql` | Ryhmätriggerien korjaus (rinnakkaisuus), ei uusia tauluja; ks. luku 5.3 |
+| `api/db/migrations/004_private_group_requests.sql` | Yksityisen ryhmän nimen yksilöllisyys, taulu `group_join_requests`; ks. luku 5.4 |
 | `api/db/seeds/demo_seed.sql` | Esittelydata (voi ajaa monta kertaa) |
 | `api/db/checks/schema_checks.sql` | Rajoitteiden tarkistukset (aina ROLLBACK) |
 | `api/db/migrate.js` | Migraatiotyökalu (`pg` + `dotenv`, ei uusia riippuvuuksia) |
@@ -260,6 +261,63 @@ ryhmien id:t). Korjauksesta päätetään ryhmä kerrallaan; mitään ei poistet
 
 Uusi backend-versio (tilin hallinta) toimii myös ilman migraatiota 003, joten järjestys on vapaa. Suositus:
 diagnostiikka → migraatio 003 → julkaisu → tarkistus.
+
+### 5.4 Migraatio 004 (yksityisen ryhmän haku ja liittymispyynnöt)
+
+Lisää yksilöllisen indeksin `groups_private_name_uq` (`lower(btrim(name))`, vain `visibility = 'private'`),
+taulun `group_join_requests` ja triggerin, joka sulkee odottavan pyynnön, kun jäsenyys syntyy. Dataa ei poisteta.
+
+1. **Diagnostiikka ensin** (vain luku):
+   ```sql
+   -- yksityiset ryhmät, joilla on sama nimi (kirjainkoko ja reunojen välilyönnit eivät erota)
+   SELECT lower(btrim(name)) AS normalized, array_agg(id ORDER BY id) AS ids, array_agg(name ORDER BY id) AS names
+   FROM groups
+   WHERE visibility = 'private'
+   GROUP BY lower(btrim(name))
+   HAVING count(*) > 1;
+   ```
+   Odotettu tulos: 0 riviä. Jos rivejä tulee, migraatio pysähtyy ("Migration 004 stopped", DETAIL listaa nimet ja
+   id:t). Sovi uusi nimi ryhmän ylläpitäjän kanssa ja nimeä yksi ryhmä uudelleen
+   (`UPDATE groups SET name = '…' WHERE id = …`). Mitään ei nimetä automaattisesti.
+2. **Ajo** samoilla muuttujilla kuin luvussa 5.1:
+   ```powershell
+   npm run db:status                              # 001–003 applied; 004 pending
+   npm run db:migrate -- --confirm=cinema_db
+   npm run db:status                              # 4 applied, 0 pending
+   ```
+3. **Järjestys:** aja migraatio 004 **ennen** julkaisua. Uusi backend käyttää taulua `group_join_requests`;
+   ilman sitä yksityisen ryhmän haku ja pyynnöt vastaisivat 500. Vanha versio toimii migraation 004 kanssa normaalisti.
+
+### 5.5 Julisteet ja kuvaukset TMDB:stä (issue #3)
+
+Käsin ajettava komento täydentää **jo tietokannassa olevat** elokuvat (`tmdb_id`) TMDB:n Movie Details -rajapinnasta
+(`GET /3/movie/{tmdb_id}`). Uusia elokuvia ei lisätä, eikä mitään poisteta; `movies.id`, arvostelut ja toivelistat säilyvät.
+
+- `poster_path`: tallennetaan, jos TMDB palauttaa kelvollisen suhteellisen polun (esim. `/abc123.jpg`).
+  Puuttuva tai kelvoton arvo ei koskaan tyhjennä olemassa olevaa julistetta.
+- `overview`: täytetään **vain tyhjä** kuvaus, ensin `fi-FI`, sitten `en-US`. Olemassa olevaa tekstiä ei korvata.
+- Virhe, aikakatkaisu (10 s) tai tyhjä vastaus → elokuvan tiedot jäävät ennalleen; lopussa yhteenveto
+  (päivitetty / ennallaan / virheet). Virheiden jälkeen komennon voi ajaa uudelleen.
+- `tmdb_synced_at` päivittyy, kun elokuvaan kirjoitetaan.
+
+Tarvitaan TMDB:n **API Read Access Token** (TMDB-tili → Settings → API) muuttujassa `TMDB_READ_TOKEN`.
+Sovellus itse ei tarvitse tokenia; sitä ei lisätä App Settingsiin eikä `VITE_*`-muuttujaan.
+
+```powershell
+cd api
+# DB_* kuten luvussa 5.1 (Azure) tai paikallinen .env
+$tok = Read-Host 'TMDB read token' -AsSecureString
+$env:TMDB_READ_TOKEN = [System.Net.NetworkCredential]::new('', $tok).Password
+
+npm run tmdb:sync-movie-details -- --dry-run                     # näyttää muutokset, ei kirjoita
+npm run tmdb:sync-movie-details -- --confirm=cinema_db           # kirjoittaa (Azure vaatii --confirm)
+npm run tmdb:sync-movie-details -- --dry-run --only=603,27205    # vain nämä TMDB-id:t
+
+Remove-Item Env:TMDB_READ_TOKEN
+```
+
+Tyhjät kuvaukset näkee etukäteen kyselyllä:
+`SELECT id, tmdb_id, title FROM movies WHERE overview IS NULL OR btrim(overview) = '' ORDER BY id;`
 
 ## 6. Demodata
 

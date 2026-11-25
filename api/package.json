@@ -9,7 +9,8 @@
     "db:status": "node db/migrate.js status",
     "db:migrate": "node db/migrate.js migrate",
     "db:seed": "node db/migrate.js seed",
-    "db:check": "node db/migrate.js check"
+    "db:check": "node db/migrate.js check",
+    "tmdb:sync-movie-details": "node scripts/tmdb-sync-movie-details.js"
   },
   "keywords": [],
   "author": "",
