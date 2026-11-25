@@ -36,6 +36,10 @@
   padding: 10px 0;
   border-bottom: 1px solid #8b9183;
 }
+.site-header nav > .header-link + .header-link {
+  margin-left: 1.5rem;
+}
+
 .hero {
   position: relative;
   padding: 70px 0 56px;

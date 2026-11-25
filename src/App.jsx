@@ -3,6 +3,7 @@ import axios from "axios";
 import "./App.css";
 import { AuthNav, LoginPage, RegisterPage, AccountPage } from "./auth/AuthPages";
 import MyReview from "./reviews/MyReview";
+import { WatchlistsPage, WatchlistPage, AddToWatchlist } from "./auth/WatchlistPages";
 
 const PAGE_SIZE = 12;
 const api = axios.create({
@@ -498,6 +499,7 @@ function MoviePage({ movieId, navigate, backHref }) {
                   <dd>{Math.max(0, movie.data.review_count + changes.delta)}</dd>
                 </div>
               </dl>
+              <AddToWatchlist movieId={movie.data.id} />
               <a
                 className="text-link"
                 href={`https://www.themoviedb.org/movie/${movie.data.tmdb_id}`}
@@ -521,6 +523,7 @@ function App() {
   const [backHref, setBackHref] = useState("/");
   const url = new URL(location, window.location.origin);
   const movieRoute = /^\/movies\/(\d+)\/?$/.exec(url.pathname);
+  const watchlistRoute = /^\/watchlists\/(\d+)\/?$/.exec(url.pathname);
   const go = (href) => {
     if (url.pathname === "/") setBackHref(location);
     navigate(href);
@@ -545,6 +548,11 @@ function App() {
             <Link href="/" navigate={go} className="header-link">
               Elokuvat →
             </Link>
+            <Link href="/watchlists" navigate={go} className="header-link">
+              Listat
+            </Link>
+
+
             <AuthNav navigate={go} />
           </nav>
         </div>
@@ -558,6 +566,10 @@ function App() {
           <RegisterPage navigate={go} />
         ) : url.pathname === "/account" ? (
           <AccountPage navigate={go} />
+        ) : url.pathname === "/watchlists" ? (
+          <WatchlistsPage navigate={go} />
+        ) : watchlistRoute ? (
+          <WatchlistPage key={watchlistRoute[1]} id={watchlistRoute[1]} navigate={go} />
         ) : movieRoute ? (
           <MoviePage
             movieId={movieRoute[1]}
