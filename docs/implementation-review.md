@@ -88,7 +88,7 @@ Yhteensä 55/55 [auto], erillisessä `postgres:18.6`-kannassa. Testit eivät aja
 | --- | --- |
 | FR-01 haku | 🟡 omasta kannasta; TMDB-haku ❌ |
 | FR-02 ajankohtaiset | 🟡 uusimmat; suosituimmat ❌ |
-| FR-03 tiedot ja kuvat | 🟡 tiedot ✅, kuvat odottavat TMDB:tä |
+| FR-03 tiedot ja kuvat | ✅ paikallisesti: julisteet ja puuttuvat kuvaukset TMDB:stä komennolla `tmdb:sync-movie-details` (olemassa olevat elokuvat); TMDB-attribuutio |
 | FR-04 tili | ✅ paikallisesti (rekisteröinti, kirjautuminen, nimimerkki, poisto); Azure-tarkistus kesken |
 | FR-05 toivelistat | 🧱 |
 | FR-06 arviointi | ✅ kirjautuneille; anonyymi arviointi odottaa päätöstä (Q-06) |

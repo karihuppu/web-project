@@ -589,6 +589,15 @@ function App() {
           <span>Elokuvailta · Ryhmä 13</span>
           <span>Opintoprojekti · Esittelyversio</span>
         </div>
+        {/* Credits: TMDB attribution (https://developer.themoviedb.org/docs/faq).
+            The logo is an approved TMDB logo, smaller than our own brand. */}
+        <section className="container site-footer__credits" aria-label="Lähteet">
+          <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer" className="tmdb-credit__logo">
+            <img src="/tmdb-logo.svg" alt="The Movie Database (TMDB)" width="91" height="12" />
+          </a>
+          <p lang="en">This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+          <p>Elokuvien julisteet ja osa kuvauksista: The Movie Database (TMDB).</p>
+        </section>
       </footer>
     </>
   );
