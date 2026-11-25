@@ -3,12 +3,9 @@ import axios from "axios";
 import "./App.css";
 import { AuthNav, LoginPage, RegisterPage, AccountPage } from "./auth/AuthPages";
 import MyReview from "./reviews/MyReview";
-<<<<<<< HEAD
 import { WatchlistsPage, WatchlistPage, AddToWatchlist } from "./auth/WatchlistPages";
-=======
 import GroupsPage from "./groups/GroupsPage";
 import GroupPage from "./groups/GroupPage";
->>>>>>> 07f69e811eaea03f18a5dd025c861e9a4015d15f
 
 const PAGE_SIZE = 12;
 const api = axios.create({
@@ -528,11 +525,8 @@ function App() {
   const [backHref, setBackHref] = useState("/");
   const url = new URL(location, window.location.origin);
   const movieRoute = /^\/movies\/(\d+)\/?$/.exec(url.pathname);
-<<<<<<< HEAD
   const watchlistRoute = /^\/watchlists\/(\d+)\/?$/.exec(url.pathname);
-=======
   const groupRoute = /^\/groups\/(\d+)\/?$/.exec(url.pathname);
->>>>>>> 07f69e811eaea03f18a5dd025c861e9a4015d15f
   const go = (href) => {
     if (url.pathname === "/") setBackHref(location);
     navigate(href);
@@ -557,17 +551,14 @@ function App() {
             <Link href="/" navigate={go} className="header-link">
               Elokuvat →
             </Link>
-<<<<<<< HEAD
             <Link href="/watchlists" navigate={go} className="header-link">
               Listat
             </Link>
 
 
-=======
             <Link href="/groups" navigate={go} className="header-link">
               Ryhmät
             </Link>
->>>>>>> 07f69e811eaea03f18a5dd025c861e9a4015d15f
             <AuthNav navigate={go} />
           </nav>
         </div>
@@ -581,17 +572,14 @@ function App() {
           <RegisterPage navigate={go} />
         ) : url.pathname === "/account" ? (
           <AccountPage navigate={go} />
-<<<<<<< HEAD
         ) : url.pathname === "/watchlists" ? (
           <WatchlistsPage navigate={go} />
         ) : watchlistRoute ? (
           <WatchlistPage key={watchlistRoute[1]} id={watchlistRoute[1]} navigate={go} />
-=======
         ) : url.pathname === "/groups" || url.pathname === "/groups/" ? (
           <GroupsPage navigate={go} />
         ) : groupRoute ? (
           <GroupPage key={groupRoute[1]} groupId={groupRoute[1]} navigate={go} />
->>>>>>> 07f69e811eaea03f18a5dd025c861e9a4015d15f
         ) : movieRoute ? (
           <MoviePage
             movieId={movieRoute[1]}

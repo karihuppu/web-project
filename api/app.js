@@ -6,11 +6,8 @@ import testRouter from './routes/testRouter.js'
 import movieRouter from './routes/movieRouter.js'
 import genreRouter from './routes/genreRouter.js'
 import authRouter from './routes/authRouter.js'
-<<<<<<< HEAD
 import watchlistRouter from "./routes/WatchlistRouter.js";
-=======
 import groupRouter from './routes/groupRouter.js'
->>>>>>> 07f69e811eaea03f18a5dd025c861e9a4015d15f
 import { pool } from './models/db.js'
 
 const distPath = fileURLToPath(new URL('../dist/', import.meta.url))
@@ -27,11 +24,8 @@ app.use('/api/tests', testRouter)
 app.use('/api/movies', movieRouter)
 app.use('/api/genres', genreRouter)
 app.use('/api/auth', authRouter)
-<<<<<<< HEAD
 app.use("/api/watchlists", watchlistRouter);
-=======
 app.use('/api/groups', groupRouter)
->>>>>>> 07f69e811eaea03f18a5dd025c861e9a4015d15f
 
 // Database connectivity check
 app.get('/api/health', async (_req, res) => {
