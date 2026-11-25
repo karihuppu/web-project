@@ -3,6 +3,8 @@ import axios from "axios";
 import "./App.css";
 import { AuthNav, LoginPage, RegisterPage, AccountPage } from "./auth/AuthPages";
 import MyReview from "./reviews/MyReview";
+import GroupsPage from "./groups/GroupsPage";
+import GroupPage from "./groups/GroupPage";
 
 const PAGE_SIZE = 12;
 const api = axios.create({
@@ -521,6 +523,7 @@ function App() {
   const [backHref, setBackHref] = useState("/");
   const url = new URL(location, window.location.origin);
   const movieRoute = /^\/movies\/(\d+)\/?$/.exec(url.pathname);
+  const groupRoute = /^\/groups\/(\d+)\/?$/.exec(url.pathname);
   const go = (href) => {
     if (url.pathname === "/") setBackHref(location);
     navigate(href);
@@ -545,6 +548,9 @@ function App() {
             <Link href="/" navigate={go} className="header-link">
               Elokuvat →
             </Link>
+            <Link href="/groups" navigate={go} className="header-link">
+              Ryhmät
+            </Link>
             <AuthNav navigate={go} />
           </nav>
         </div>
@@ -558,6 +564,10 @@ function App() {
           <RegisterPage navigate={go} />
         ) : url.pathname === "/account" ? (
           <AccountPage navigate={go} />
+        ) : url.pathname === "/groups" || url.pathname === "/groups/" ? (
+          <GroupsPage navigate={go} />
+        ) : groupRoute ? (
+          <GroupPage key={groupRoute[1]} groupId={groupRoute[1]} navigate={go} />
         ) : movieRoute ? (
           <MoviePage
             movieId={movieRoute[1]}
