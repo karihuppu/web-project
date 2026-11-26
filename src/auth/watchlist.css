@@ -1,0 +1,247 @@
+.wl-page {
+  padding: 36px 0 75px;
+}
+.wl-back {
+  display: inline-block;
+  margin-bottom: 40px;
+}
+.wl-head {
+  margin-bottom: 36px;
+}
+.wl-head .eyebrow {
+  margin-bottom: 14px;
+}
+.wl-head h1 {
+  font-size: clamp(45px, 5vw, 70px);
+  line-height: 1.05;
+  letter-spacing: -1.5px;
+  margin: 0 0 14px;
+}
+.wl-sub {
+  margin: 0;
+  font-size: 16px;
+  color: #67685e;
+}
+.wl-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+
+.wl-error {
+  margin: 0 0 24px;
+  padding: 14px 18px;
+  border: 1px solid #d8c2b4;
+  background: #f1e6dc;
+  color: #5c3a2a;
+  font-size: 14px;
+}
+.wl-empty {
+  margin: 0;
+  padding: 48px 24px;
+  text-align: center;
+  border: 1px solid #d7d9cb;
+  background: #efefe6;
+  color: #616754;
+}
+
+/* ---------- Create form (matches the catalogue search) ---------- */
+.wl-create {
+  display: flex;
+  max-width: 560px;
+  margin-bottom: 44px;
+}
+.wl-create input {
+  flex: 1;
+  min-width: 0;
+  height: 49px;
+  padding: 0 13px;
+  border: 1px solid #cccfc2;
+  border-right: 0;
+  background: transparent;
+  color: #292e29;
+  font-size: 14px;
+  font-family: inherit;
+}
+.wl-create input:focus-visible {
+  outline: 2px solid #85503a;
+  outline-offset: -2px;
+}
+.wl-create .button {
+  flex-shrink: 0;
+}
+.wl-create .button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- List cards ---------- */
+.wl-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 26px;
+}
+.wl-card {
+  display: flex;
+  flex-direction: column;
+  background: #fbfaf5;
+  border: 1px solid #d8d7cd;
+  border-top: 3px solid #d9ad76;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.wl-card:hover {
+  transform: translateY(-2px);
+  border-color: #8e9581;
+  border-top-color: #d9ad76;
+}
+.wl-card__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px 24px 22px;
+  min-height: 140px;
+}
+.wl-card__name {
+  font-family: "Libre Caslon Display", Georgia, serif;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  overflow-wrap: anywhere;
+}
+.wl-card__count {
+  margin-top: auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #6c6e5d;
+}
+.wl-card__delete {
+  align-self: stretch;
+  padding: 11px 24px;
+  background: none;
+  border: 0;
+  border-top: 1px solid #e6e5db;
+  color: #77796e;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.wl-card__delete:hover {
+  color: #85503a;
+  background: #f4efe6;
+}
+
+/* ---------- Movies inside one list ---------- */
+.wl-movies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 38px 26px;
+}
+.wl-movie {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.wl-movie__link {
+  display: block;
+  width: 100%;
+}
+.wl-movie__poster {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background: radial-gradient(ellipse at 60% 35%, #e5e5d9 0, transparent 65%), #d5d9cb;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: #3f493c;
+  font-family: "Libre Caslon Display", Georgia, serif;
+  font-size: 26px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.wl-movie__poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wl-movie__title {
+  display: block;
+  margin-top: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+.wl-movie__year {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #777b6d;
+}
+.wl-movie__remove {
+  min-height: 38px;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+/* ---------- Add to list (movie page) ---------- */
+.wl-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 14px;
+}
+.wl-add select {
+  height: 46px;
+  min-width: 220px;
+  padding: 0 13px;
+  border: 1px solid #cccfc2;
+  background: transparent;
+  color: #292e29;
+  font-size: 14px;
+  font-family: inherit;
+}
+.wl-add__msg {
+  margin: 0;
+  font-size: 13px;
+  color: #76634d;
+}
+
+/* ---------- Responsive ---------- */
+@media (min-width: 1200px) {
+  .wl-movies { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .wl-movies { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .wl-page { padding-top: 24px; }
+  .wl-back { margin-bottom: 28px; }
+  .wl-head h1 { font-size: 43px; }
+  .wl-movies { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 17px; }
+  .wl-movie__poster { font-size: 22px; padding: 16px; }
+}
+@media (max-width: 480px) {
+  .wl-create { max-width: none; }
+  .wl-grid { grid-template-columns: 1fr; }
+  .wl-add select { min-width: 0; flex: 1; }
+}

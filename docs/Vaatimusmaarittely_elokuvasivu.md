@@ -1,6 +1,6 @@
 # Vaatimusmäärittely: Elokuvasivu
 
-**Versio:** 0.7
+**Versio:** 0.8
 **Päivämäärä:** 25.11.2026
 **Laatija:** Ryhmä 13
 **Tila:** Elokuvapalvelu
@@ -61,7 +61,7 @@ Jokaisella vaatimuksella on yksilöllinen tunniste. **Must** tarkoittaa ensimmä
 | FR-02 | #2 | Etusivulla näkyy ajankohtaisia elokuvia (uusimmat sekä kuukauden suosituimmat TMDB:n mukaan) | Must | Osittain: uusimmat julkaisupäivän mukaan, suosituimmat puuttuvat |
 | FR-03 | #3 | Elokuvista näkee tiedot ja kuvat | Must | Toteutettu tietokannan elokuville (25.11.): julisteet ja puuttuvat kuvaukset haetaan TMDB:stä käsin ajettavalla komennolla; TMDB-attribuutio sivun alaosassa; uusien elokuvien tuonti ja TMDB-haku ovat erillisiä tehtäviä; Azure-tarkistus kesken |
 | FR-04 | #4 | Käyttäjä voi luoda ja poistaa tilin sekä muokata nimimerkkiä; käyttäjä voi kirjautua sisään ja ulos | Must | Toteutettu (23.11.): rekisteröinti, kirjautuminen, uloskirjautuminen, nimimerkin muutos ja tilin poisto salasanalla; testattu paikallisesti, Azure-tarkistus kesken |
-| FR-05 | #5 | Käyttäjä voi tehdä ja poistaa toivelistan sekä lisätä ja poistaa siinä elokuvia | Must | Tietokanta valmis, toiminto ei aloitettu |
+| FR-05 | #5 | Käyttäjä voi tehdä ja poistaa toivelistan sekä lisätä ja poistaa siinä elokuvia | Must | Toteutettu (25.11., PR #21, Lucas): omat listat, luonti ja poisto, elokuvan lisäys elokuvan sivulta ja poisto listalta; Azure-tarkistus kesken |
 | FR-06 | #6 | Kirjautunut käyttäjä voi arvioida elokuvan (1–5 tähteä) ja lisätä kommentin ¹ | Must | Toteutettu kirjautuneille (16.11.): luonti, muokkaus ja poisto; valmis julkaisuun, Azure-tarkistus kesken |
 | FR-07 | #7 | Käyttäjä voi luoda julkisen tai yksityisen ryhmän sekä lisätä ja poistaa siinä henkilöitä | Must | Pääosin toteutettu (25.11.): luonti julkisena/yksityisenä, roolit ylläpitäjä/jäsen, ylläpitäjä lisää (nimimerkillä) ja poistaa jäseniä, eroaminen; roolien vaihto käsin puuttuu; Azure-tarkistus kesken |
 | FR-08 | #8 | Sivu toimii myös puhelimella | Must | Mukautuva ulkoasu tehty, mittaus puuttuu |
@@ -199,3 +199,4 @@ Muutokset kirjataan dokumentin versiohistoriaan ja GitHubin backlogiin. Asiakas 
 | 0.5 | 25.11.2026 | FR-07 ja FR-13 tila päivitetty (ryhmien luonti, roolit, liittyminen, eroaminen, jäsenten lisäys/poisto); Q-02: väliaikainen ratkaisu kirjattu |
 | 0.6 | 25.11.2026 | FR-13: yksityisen ryhmän haku koko nimellä ja liittymispyynnöt (hyväksyntä/hylkäys) toteutettu; Q-02 päivitetty |
 | 0.7 | 25.11.2026 | FR-03: julisteet ja puuttuvat kuvaukset TMDB:stä olemassa oleville elokuville; TMDB-attribuutio |
+| 0.8 | 25.11.2026 | FR-05: toivelistat toteutettu (PR #21) |
