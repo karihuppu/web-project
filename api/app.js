@@ -9,6 +9,7 @@ import authRouter from './routes/authRouter.js'
 import watchlistRouter from "./routes/WatchlistRouter.js";
 import groupRouter from './routes/groupRouter.js'
 import { pool } from './models/db.js'
+import groupWatchlistRouter from './routes/groupWatchlistRouter.js'
 
 const distPath = fileURLToPath(new URL('../dist/', import.meta.url))
 const indexHtmlPath = fileURLToPath(new URL('../dist/index.html', import.meta.url))
@@ -25,6 +26,8 @@ app.use('/api/movies', movieRouter)
 app.use('/api/genres', genreRouter)
 app.use('/api/auth', authRouter)
 app.use("/api/watchlists", watchlistRouter);
+app.use('/api/groups', groupRouter)
+app.use('/api/groups/:groupId/watchlists', groupWatchlistRouter)
 app.use('/api/groups', groupRouter)
 
 // Database connectivity check
