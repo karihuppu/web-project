@@ -6,6 +6,7 @@ import MyReview from "./reviews/MyReview";
 import { WatchlistsPage, WatchlistPage, AddToWatchlist } from "./auth/WatchlistPages";
 import GroupsPage from "./groups/GroupsPage";
 import GroupPage from "./groups/GroupPage";
+import { SharedListPage } from "./groups/ListSharing";
 
 const PAGE_SIZE = 12;
 const api = axios.create({
@@ -527,6 +528,7 @@ function App() {
   const movieRoute = /^\/movies\/(\d+)\/?$/.exec(url.pathname);
   const watchlistRoute = /^\/watchlists\/(\d+)\/?$/.exec(url.pathname);
   const groupRoute = /^\/groups\/(\d+)\/?$/.exec(url.pathname);
+  const sharedListRoute = /^\/groups\/(\d+)\/watchlists\/(\d+)\/?$/.exec(url.pathname);
   const go = (href) => {
     if (url.pathname === "/") setBackHref(location);
     navigate(href);
@@ -578,6 +580,13 @@ function App() {
           <WatchlistPage key={watchlistRoute[1]} id={watchlistRoute[1]} navigate={go} />
         ) : url.pathname === "/groups" || url.pathname === "/groups/" ? (
           <GroupsPage navigate={go} />
+        ) : sharedListRoute ? (
+          <SharedListPage
+            key={`${sharedListRoute[1]}:${sharedListRoute[2]}`}
+            groupId={sharedListRoute[1]}
+            listId={sharedListRoute[2]}
+            navigate={go}
+          />
         ) : groupRoute ? (
           <GroupPage key={groupRoute[1]} groupId={groupRoute[1]} navigate={go} />
         ) : movieRoute ? (

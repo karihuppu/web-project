@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth, loginPathFor } from "../auth/useAuth";
+import { SharedLists } from "./ListSharing";
 import {
   ROLE_LABEL,
   VISIBILITY_LABEL,
@@ -313,6 +314,7 @@ export default function GroupPage({ groupId, navigate }) {
       {isAdmin && group.visibility === "private" && (
         <JoinRequests groupId={group.id} version={version} onDecided={reload} onUnauthorized={logout} />
       )}
+      <SharedLists groupId={group.id} navigate={navigate} />
 
       <section aria-labelledby="members-title">
         <h2 id="members-title">Jäsenet</h2>
