@@ -301,7 +301,9 @@ Käsin ajettava komento täydentää **jo tietokannassa olevat** elokuvat (`tmdb
 - `tmdb_synced_at` päivittyy, kun elokuvaan kirjoitetaan.
 
 Tarvitaan TMDB:n **API Read Access Token** (TMDB-tili → Settings → API) muuttujassa `TMDB_READ_TOKEN`.
-Sovellus itse ei tarvitse tokenia; sitä ei lisätä App Settingsiin eikä `VITE_*`-muuttujaan.
+Myös sovellus käyttää tokenia elokuvahakuun ja TMDB-elokuvasivuun (`/api/tmdb/...`, ks. `docs/api.md`):
+Azuressa se on App Service -sovelluksen App Setting `TMDB_READ_TOKEN` (palvelimen muuttuja). Sitä ei koskaan
+lisätä `VITE_*`-muuttujaan eikä frontendiin. Ilman tokenia oma valikoima toimii, TMDB-haku vastaa 503.
 
 ```powershell
 cd api

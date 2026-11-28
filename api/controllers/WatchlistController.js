@@ -1,5 +1,6 @@
 import * as Watchlist from "../models/Watchlist.js";
 import { parsePositiveInt } from "../middleware/validation.js";
+import { getMovieDetails, toHttpError } from "../services/tmdbMovies.js";
 
 const fail = (res, status, message) =>
   res.status(status).json({ error: { message, status } }); // matches the format your frontend parses
@@ -54,9 +55,48 @@ export async function remove(req, res, next) {
   } catch (e) { next(e); }
 }
 
+// Body { tmdb_id }: a movie found in TMDB search, also one that is not in our database yet.
+// Order: owner check -> TMDB details (outside the transaction) -> transaction in the model.
+async function addTmdbMovie(req, res, id) {
+  const tmdbId = toId(req.body.tmdb_id);
+  if (!id || !tmdbId) return fail(res, 400, "Virheellinen tunniste.");
+  // Cheap check first: a foreign or missing list never causes a TMDB request.
+  if (!(await Watchlist.findOwned(id, req.userId))) return fail(res, 404, "Listaa ei löytynyt.");
+
+  let details = null;
+  if (!(await Watchlist.localMovieId(tmdbId))) {
+    try {
+      details = await getMovieDetails(tmdbId);
+    } catch (error) {
+      throw toHttpError(error);
+    }
+  }
+  let result = await Watchlist.addTmdbMovie(id, req.userId, tmdbId, details);
+  if (result.status === "needs_details") {
+    try {
+      details = await getMovieDetails(tmdbId);
+    } catch (error) {
+      throw toHttpError(error);
+    }
+    result = await Watchlist.addTmdbMovie(id, req.userId, tmdbId, details);
+  }
+  if (result.status === "not_found") return fail(res, 404, "Listaa ei löytynyt.");
+  if (result.status === "exists") {
+    return res.status(409).json({
+      error: { message: "Elokuva on jo tällä listalla.", status: 409 },
+      movie_id: result.movieId,
+    });
+  }
+  res.status(201).json({ item: result.item, movie_id: result.movieId, imported: result.created });
+}
+
 export async function addMovie(req, res, next) {
   try {
     const id = toId(req.params.id);
+    const hasTmdb = req.body?.tmdb_id !== undefined;
+    const hasLocal = req.body?.movie_id !== undefined;
+    if (hasTmdb && hasLocal) return fail(res, 400, "Anna joko movie_id tai tmdb_id, ei molempia.");
+    if (hasTmdb) return await addTmdbMovie(req, res, id);
     const movieId = toId(req.body?.movie_id);
     if (!id || !movieId) return fail(res, 400, "Virheellinen tunniste.");
     const row = await Watchlist.addMovie(id, req.userId, movieId);

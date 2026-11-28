@@ -393,6 +393,16 @@
   border: 1px solid #c7ccbd;
   padding: 4px 12px;
 }
+.genre-tags span {
+  font-size: 11px;
+  border: 1px solid #c7ccbd;
+  padding: 4px 12px;
+}
+.tmdb-results {
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid #c7ccbd;
+}
 .genre-tags a:hover {
   background: #e6e9dd;
 }

@@ -22,7 +22,7 @@ async function call(path, { method = "GET", body } = {}) {
     if (!error.response) throw Object.assign(new Error("Palvelimeen ei saatu yhteyttä."), { status: 0 });
     throw Object.assign(
       new Error(error.response.data?.error?.message || "Jokin meni pieleen."),
-      { status: error.response.status },
+      { status: error.response.status, movieId: error.response.data?.movie_id },
     );
   }
 }
@@ -32,4 +32,8 @@ export const createList = (name) => call("", { method: "POST", body: { name } })
 export const getList = (id) => call(`/${id}`).then((d) => d.watchlist);
 export const deleteList = (id) => call(`/${id}`, { method: "DELETE" });
 export const addMovie = (id, movieId) => call(`/${id}/movies`, { method: "POST", body: { movie_id: movieId } });
-export const removeMovie = (id, movieId) => call(`/${id}/movies/${movieId}`, { method: "DELETE" });
+// A movie from TMDB search: the server imports it into our catalogue when needed.
+// Answers { item, movie_id, imported }; movie_id = our movies.id (the /movies/:id page).
+export const addTmdbMovie = (id, tmdbId) =>
+  call(`/${id}/movies`, { method: "POST", body: { tmdb_id: tmdbId } });
+export const removeMovie =(id, movieId) => call(`/${id}/movies/${movieId}`, { method: "DELETE" });
