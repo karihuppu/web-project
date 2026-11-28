@@ -9,6 +9,7 @@
 import process from 'node:process'
 import { createTmdbClient, TmdbError } from './tmdbClient.js'
 import { VALID_POSTER_PATH } from './movieDetailsSync.js'
+import { voteAverage, voteCount } from './tmdbValues.js'
 
 const CACHE_TTL_MS = 10 * 60 * 1000
 const CACHE_MAX = 500
@@ -59,9 +60,6 @@ const date = (value) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null
   return Number.isNaN(Date.parse(`${v}T00:00:00Z`)) ? null : v
 }
-const voteAverage = (value) =>
-  typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 10 ? Math.round(value * 10) / 10 : null
-const voteCount = (value) => (Number.isInteger(value) && value >= 0 && value <= 2147483647 ? value : null)
 const runtime = (value) => (Number.isInteger(value) && value > 0 && value <= MAX_SMALLINT ? value : null)
 const validId = (value) => Number.isInteger(value) && value > 0 && value <= 2147483647
 
