@@ -57,9 +57,11 @@ function useLocation() {
     window.addEventListener("popstate", update);
     return () => window.removeEventListener("popstate", update);
   }, []);
-  const navigate = (href) => {
+  // replace: true is used for redirects, so "Back" does not return to the redirecting page.
+  const navigate = (href, { replace = false } = {}) => {
     if (href === window.location.pathname + window.location.search) return;
-    window.history.pushState(null, "", href);
+    if (replace) window.history.replaceState(null, "", href);
+    else window.history.pushState(null, "", href);
     setLocation(href);
     window.scrollTo({ top: 0, behavior: "instant" });
   };
@@ -289,7 +291,9 @@ function Catalogue({ params, navigate }) {
         )}
         {!movies.loading && !movies.error && items.length === 0 && (
           <Message kind="info">
-            Elokuvia ei löytynyt. Kokeile toista nimeä tai tyhjennä suodattimet.
+            {params.get("q")
+              ? "Valikoimastamme ei löytynyt elokuvia tällä haulla. Katso tulokset TMDB:stä alempaa."
+              : "Elokuvia ei löytynyt. Kokeile toista nimeä tai tyhjennä suodattimet."}
           </Message>
         )}
         {!movies.loading && !movies.error && (
@@ -350,6 +354,19 @@ function Catalogue({ params, navigate }) {
               </button>
             </nav>
           )}
+        {params.get("q") && (
+          <TmdbResults
+            key={params.get("q")}
+            query={params.get("q")}
+            genreSelected={params.has("genre")}
+            shownIds={
+              movies.loading || movies.error
+                ? []
+                : items.slice(0, PAGE_SIZE).map((movie) => movie.id)
+            }
+            navigate={navigate}
+          />
+        )}
       </section>
     </>
   );
@@ -521,6 +538,186 @@ function MoviePage({ movieId, navigate, backHref }) {
   );
 }
 
+// TMDB errors from our API: 503 = TMDB unavailable (the server sends a Finnish message).
+const tmdbErrorText = (status) =>
+  status === 503
+    ? "Elokuvahaku TMDB:stä ei ole juuri nyt käytettävissä. Oman valikoimamme elokuvat toimivat normaalisti. Yritä hetken päästä uudelleen."
+    : status === 400
+      ? "Hakusana ei kelpaa. Kokeile lyhyempää hakusanaa."
+      : "TMDB-hakua ei voitu tehdä. Yritä hetken kuluttua uudelleen.";
+
+// Search results from TMDB under our own catalogue results (only when there is a search word).
+// Movies that are already ours open /movies/:id (reviews); others open /tmdb/:tmdbId.
+function TmdbResults({ query, genreSelected, shownIds, navigate }) {
+  const [page, setPage] = useState(1);
+  const search = useApi(
+    `/api/tmdb/search?${new URLSearchParams({ q: query, page: String(page) })}`,
+  );
+  const shown = new Set(shownIds);
+  const items = (search.data?.items || []).filter(
+    (movie) => !(movie.local_id && shown.has(movie.local_id)),
+  );
+  const totalPages = search.data?.total_pages || 1;
+  return (
+    <section className="tmdb-results" aria-labelledby="tmdb-results-title">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">LISÄÄ ELOKUVIA</p>
+          <h2 id="tmdb-results-title">Tulokset TMDB:stä</h2>
+        </div>
+      </div>
+      <p className="result-query">
+        Haku koko TMDB-tietokannasta nimellä tai sen osalla.
+        {genreSelected && " Genre- ja järjestysvalinta koskevat vain omaa valikoimaamme."}
+      </p>
+      {search.loading && <Message kind="info">Haetaan TMDB:stä…</Message>}
+      {search.error && (
+        <Message retry={search.status === 400 ? undefined : search.retry}>
+          {tmdbErrorText(search.status)}
+        </Message>
+      )}
+      {!search.loading && !search.error && items.length === 0 && (
+        <Message kind="info">TMDB:stä ei löytynyt muita elokuvia tällä haulla.</Message>
+      )}
+      {!search.loading && !search.error && items.length > 0 && (
+        <div className="movie-grid">
+          {items.map((movie, index) => (
+            <article className="movie-card" key={movie.tmdb_id}>
+              <Link
+                href={movie.local_id ? `/movies/${movie.local_id}` : `/tmdb/${movie.tmdb_id}`}
+                navigate={navigate}
+                className="movie-card__link"
+              >
+                <div className={`movie-card__art movie-card__art--${index % 4}`}>
+                  <Poster movie={movie} />
+                  <span className="movie-card__open" aria-hidden="true">→</span>
+                </div>
+                <div className="movie-card__meta">
+                  <span>{yearOf(movie.release_date)}</span>
+                  <span>{movie.local_id ? "Valikoimassa" : "TMDB"}</span>
+                </div>
+                <h3>{movie.title}</h3>
+                {movie.original_title && movie.original_title !== movie.title && (
+                  <p className="movie-card__genres">{movie.original_title}</p>
+                )}
+                <p className="movie-card__rating">{ratingOf(movie.tmdb_vote_average)}</p>
+              </Link>
+            </article>
+          ))}
+        </div>
+      )}
+      {!search.loading && !search.error && totalPages > 1 && (
+        <nav className="pagination" aria-label="TMDB-tulossivut">
+          <button
+            className="button button--secondary"
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+          >
+            ← Edellinen
+          </button>
+          <span>
+            Sivu {page} / {totalPages}
+          </span>
+          <button
+            className="button button--secondary"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Seuraava →
+          </button>
+        </nav>
+      )}
+    </section>
+  );
+}
+
+// /tmdb/:tmdbId — a movie that is not in our database yet. When it is (local_id), the page
+// redirects to /movies/:id, where the reviews are.
+function TmdbMoviePage({ tmdbId, navigate, backHref }) {
+  const movie = useApi(`/api/tmdb/movies/${tmdbId}`);
+  const localId = movie.data?.local_id;
+  useEffect(() => {
+    if (localId) navigate(`/movies/${localId}`, { replace: true });
+  }, [localId, navigate]);
+  const data = movie.data && !localId ? movie.data : null;
+  return (
+    <div className="movie-page">
+      <Link href={backHref} navigate={navigate} className="text-link back-link">
+        ← Takaisin elokuviin
+      </Link>
+      {(movie.loading || localId) && <Message kind="info">Ladataan elokuvaa…</Message>}
+      {movie.error && (
+        <Message retry={movie.status === 503 ? movie.retry : undefined}>
+          {movie.status === 404 || movie.status === 400
+            ? "Elokuvaa ei löytynyt."
+            : movie.status === 503
+              ? "Elokuvan tietoja ei saatu TMDB:stä juuri nyt. Oman valikoimamme elokuvat toimivat normaalisti. Yritä hetken päästä uudelleen."
+              : "Elokuvaa ei voitu ladata. Yritä uudelleen."}
+        </Message>
+      )}
+      {data && (
+        <section className="movie-detail" aria-labelledby="movie-title">
+          <Poster movie={data} large />
+          <div className="movie-detail__body">
+            <p className="eyebrow">
+              {yearOf(data.release_date)}
+              {data.runtime_minutes ? ` · ${data.runtime_minutes} MIN` : ""}
+            </p>
+            <h1 id="movie-title">{data.title}</h1>
+            {data.original_title && data.original_title !== data.title && (
+              <p className="original-title">{data.original_title}</p>
+            )}
+            {data.genres.length > 0 && (
+              <div className="genre-tags">
+                {data.genres.map((genre) => (
+                  <span key={genre.tmdb_id}>{genre.name}</span>
+                ))}
+              </div>
+            )}
+            <p className="overview" lang={data.overview_language === "en" ? "en" : undefined}>
+              {data.overview || "Elokuvan kuvausta ei ole saatavilla."}
+            </p>
+            {data.overview_language === "en" && (
+              <p className="muted">Suomenkielistä kuvausta ei ole, joten kuvaus on englanniksi.</p>
+            )}
+            <dl className="movie-facts">
+              <div>
+                <dt>TMDB-arvio</dt>
+                <dd>
+                  {data.tmdb_vote_average == null
+                    ? "Ei saatavilla"
+                    : `${Number(data.tmdb_vote_average).toFixed(1)} / 10`}
+                </dd>
+              </div>
+              <div>
+                <dt>Arvostelut sivustolla</dt>
+                <dd>Ei vielä</dd>
+              </div>
+            </dl>
+            <p className="muted">
+              Elokuva ei ole vielä valikoimassamme. Kun lisäät sen listallesi, sille avautuu oma
+              sivu, jolla sitä voi arvostella.
+            </p>
+            <AddToWatchlist
+              tmdbId={data.tmdb_id}
+              navigate={navigate}
+              backPath={`/tmdb/${data.tmdb_id}`}
+            />
+            <a
+              className="text-link"
+              href={`https://www.themoviedb.org/movie/${data.tmdb_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Katso TMDB:ssä →
+            </a>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [location, navigate] = useLocation();
   const [backHref, setBackHref] = useState("/");
@@ -529,9 +726,10 @@ function App() {
   const watchlistRoute = /^\/watchlists\/(\d+)\/?$/.exec(url.pathname);
   const groupRoute = /^\/groups\/(\d+)\/?$/.exec(url.pathname);
   const sharedListRoute = /^\/groups\/(\d+)\/watchlists\/(\d+)\/?$/.exec(url.pathname);
-  const go = (href) => {
+  const tmdbRoute = /^\/tmdb\/(\d+)\/?$/.exec(url.pathname);
+  const go = (href, options) => {
     if (url.pathname === "/") setBackHref(location);
-    navigate(href);
+    navigate(href, options);
   };
   return (
     <>
@@ -589,6 +787,13 @@ function App() {
           />
         ) : groupRoute ? (
           <GroupPage key={groupRoute[1]} groupId={groupRoute[1]} navigate={go} />
+        ) : tmdbRoute ? (
+          <TmdbMoviePage
+            key={tmdbRoute[1]}
+            tmdbId={tmdbRoute[1]}
+            navigate={go}
+            backHref={backHref}
+          />
         ) : movieRoute ? (
           <MoviePage
             movieId={movieRoute[1]}

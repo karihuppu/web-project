@@ -17,6 +17,8 @@ Kehityksessä perusosoite on `VITE_API_URL` (oletus `http://localhost:3000`), tu
 | PUT | `/api/movies/:id/review` | Oman arvostelun muokkaus (vaatii tokenin) | #6 |
 | DELETE | `/api/movies/:id/review` | Oman arvostelun poisto (vaatii tokenin) | #6 |
 | GET | `/api/genres` | Genret suodatusta varten | #9 |
+| GET | `/api/tmdb/search?q=&page=` | Elokuvahaku TMDB:stä nimellä tai sen osalla (julkinen) | #1, #3 |
+| GET | `/api/tmdb/movies/:tmdbId` | TMDB-elokuvan tiedot tai oma `local_id` (julkinen) | #3 |
 | POST | `/api/auth/register` | Rekisteröinti → token + käyttäjä | #4 |
 | POST | `/api/auth/login` | Kirjautuminen → token + käyttäjä | #4 |
 | GET | `/api/auth/me` | Kirjautunut käyttäjä (vaatii tokenin) | #4 |
@@ -26,7 +28,7 @@ Kehityksessä perusosoite on `VITE_API_URL` (oletus `http://localhost:3000`), tu
 | POST | `/api/watchlists` | Toivelistan luonti (vaatii tokenin) | #5 |
 | GET | `/api/watchlists/:id` | Oma toivelista elokuvineen (vaatii tokenin) | #5 |
 | DELETE | `/api/watchlists/:id` | Oman toivelistan poisto (vaatii tokenin) | #5 |
-| POST | `/api/watchlists/:id/movies` | Elokuva omalle listalle (vaatii tokenin) | #5 |
+| POST | `/api/watchlists/:id/movies` | Elokuva omalle listalle `movie_id`:llä tai `tmdb_id`:llä (vaatii tokenin) | #5 |
 | DELETE | `/api/watchlists/:id/movies/:movieId` | Elokuva pois omalta listalta (vaatii tokenin) | #5 |
 | GET | `/api/groups` | Julkiset ryhmät (haku `q`, sivutus) | #13 |
 | GET | `/api/groups/mine` | Omat ryhmät ja oma rooli (vaatii tokenin) | #7 |
@@ -242,11 +244,41 @@ Kaikki reitit vaativat tokenin. Omistaja päätellään aina tokenista; toisen k
 | `GET /api/watchlists/:id` | `200 { watchlist: { id, name, created_at, updated_at, movies: [...] } }` | `400` virheellinen id; `404` ei omaa listaa |
 | `DELETE /api/watchlists/:id` | `204` (listan elokuvarivit poistuvat, elokuvat eivät) | `400`, `404` |
 | `POST /api/watchlists/:id/movies` `{ movie_id }` | `201 { item: { watchlist_id, movie_id, added_at } }` | `400` virheellinen id; `404` listaa tai elokuvaa ei ole; `409` elokuva on jo listalla |
+| `POST /api/watchlists/:id/movies` `{ tmdb_id }` | `201 { item, movie_id, imported }` (`imported: true`, kun elokuva tallennettiin nyt `movies`-tauluun) | `400` virheellinen id tai sekä `movie_id` että `tmdb_id`; `404` listaa ei ole tai TMDB:ssä ei ole elokuvaa; `409 { error, movie_id }` elokuva on jo listalla; `503` TMDB ei vastaa |
 | `DELETE /api/watchlists/:id/movies/:movieId` | `204` | `400`; `404` listaa ei ole tai elokuva ei ole listalla |
 
 - `movies[]`: `{ id, tmdb_id, title, original_title, release_date ('YYYY-MM-DD'), runtime_minutes, poster_path, tmdb_vote_average, added_at }`, viimeksi lisätty ensin.
 - Id:t ovat positiivisia kokonaislukuja 1–2147483647 (sama sääntö kuin muualla API:ssa); `movie_id` voi olla JSON-luku tai numeromerkkijono.
 - Tilin poisto poistaa käyttäjän listat (CASCADE).
+- `{ tmdb_id }`-lisäys: (1) listan omistajuus tarkistetaan ensin, joten vieras lista ei aiheuta TMDB-kutsua;
+  (2) jos elokuvaa ei vielä ole `movies`-taulussa, tiedot haetaan TMDB:stä **ennen** transaktiota;
+  (3) transaktiossa lista lukitaan (`FOR KEY SHARE`) ja omistaja tarkistetaan uudelleen, elokuva tallennetaan
+  `INSERT … ON CONFLICT (tmdb_id) DO NOTHING` (rajoite `movies_tmdb_id_uq`) ja linkitetään listaan
+  `ON CONFLICT DO NOTHING` (pääavain `watchlist_id, movie_id`). Rinnakkaiset pyynnöt eivät luo
+  kaksoiskappaleita: yksi `201`, muut `409`. Genret liitetään vain, jos genre on jo `genres`-taulussa (TMDB-genre-id).
+  Uutta migraatiota ei tarvita. Tuotu elokuva näkyy sen jälkeen omassa valikoimassa, haussa ja genre-suodatuksessa,
+  sille voi kirjoittaa arvosteluja, ja jaetut listat näyttävät sen ryhmien nykyisten sääntöjen mukaan.
+
+## TMDB-haku (`/api/tmdb`)
+
+Julkiset reitit. Kutsut TMDB:hen tehdään palvelimella; `TMDB_READ_TOKEN` (TMDB:n *API Read Access Token*) ei koskaan
+päädy selaimeen. Ilman tokenia tai kun TMDB ei vastaa, reitit vastaavat `503` suomenkielisellä viestillä; muu API
+(oma valikoima PostgreSQL:stä, listat, arvostelut) toimii normaalisti.
+
+| Pyyntö | Onnistuu | Virheet |
+| --- | --- | --- |
+| `GET /api/tmdb/search?q=<nimi tai osa>&page=1` | `200 { page, total_pages, total_results, items: [{ tmdb_id, local_id, title, original_title, overview, overview_language?, release_date, poster_path, tmdb_vote_average, tmdb_vote_count }] }` | `400` `q` puuttuu tai yli 100 merkkiä, `page` ei ole 1–500; `503` TMDB ei käytettävissä |
+| `GET /api/tmdb/movies/:tmdbId` | oma elokuva: `200 { tmdb_id, local_id }` (frontend siirtyy `/movies/:local_id`); muuten `200 { tmdb_id, local_id: null, title, original_title, overview, overview_language?, release_date, runtime_minutes, poster_path, backdrop_path, tmdb_vote_average, tmdb_vote_count, genres: [{ tmdb_id, name }] }` | `400`; `404` TMDB:ssä ei ole elokuvaa; `503` |
+
+- TMDB: `GET /search/movie` (`query`, `include_adult=false`, `language`, `page`) ja `GET /movie/{movie_id}` (`language`).
+  Aikuissisältö jätetään aina pois.
+- Kieli: ensin `fi-FI`. Jos suomenkielistä kuvausta ei ole, käytetään `en-US`-kuvausta ja `overview_language: 'en'`.
+- `local_id` = `movies.id`, kun elokuva on jo omassa tietokannassa (`tmdb_id`-vastaavuus). `tmdb_id` ja `movies.id`
+  ovat eri asioita: `/movies/:id` käyttää aina omaa id:tä, `/tmdb/:tmdbId` TMDB:n id:tä.
+- Virheelliset arvot (esim. julistepolku, joka ei ole muotoa `/abc.jpg`, arvio yli 10, tyhjä päivämäärä) muutetaan `null`:ksi.
+- Vastaukset ovat palvelimen muistissa 10 min (enintään 500 hakua tai elokuvaa).
+- Frontend: etusivun haku näyttää ensin oman valikoiman tulokset ja niiden alla "Tulokset TMDB:stä" (ilman jo näkyviä
+  omia elokuvia). Genre- ja järjestysvalinta koskevat vain omaa valikoimaa.
 
 ## Ryhmät (`/api/groups`)
 
@@ -333,8 +365,9 @@ Lomakkeiden virheissä mukana on `fields`, jonka tekstit näytetään kentän vi
 ## Testit
 
 `api`-kansiossa `npm test` ajaa integraatiotestit: `auth.test.js`, `reviews.test.js`, `account.test.js`,
-`watchlists.test.js` (toivelistat ja oikeudet), `groups.test.js` (ryhmät API:n kautta, myös rinnakkaiset eroamiset), `group-requests.test.js`
+`watchlists.test.js` (toivelistat ja oikeudet), `tmdb-search.test.js` (TMDB-haku, elokuvasivu ja lisäys listalle
+paikallista TMDB-mockia vasten, myös rinnakkaiset lisäykset), `groups.test.js` (ryhmät API:n kautta, myös rinnakkaiset eroamiset), `group-requests.test.js`
 (yksityisen ryhmän haku ja liittymispyynnöt, myös rinnakkainen hyväksyntä ja lisäys) ja `concurrency.test.js`
 (kaksi tietokantayhteyttä: ryhmätriggerit ja tilin poisto vs. kirjoitus).
-Ne tarvitsevat erillisen, migroidun PostgreSQL-testitietokannan (`DB_*`-muuttujat, migraatiot 001–004).
+Ne tarvitsevat erillisen, migroidun PostgreSQL-testitietokannan (`DB_*`-muuttujat, migraatiot 001–005).
 **Älä aja testejä Azuren `cinema_db`:hen.** Testidata poistetaan lopuksi.

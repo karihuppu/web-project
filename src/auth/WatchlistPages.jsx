@@ -207,27 +207,63 @@ export function WatchlistPage({ id, navigate }) {
   );
 }
 
-// Used on the movie page: <AddToWatchlist movieId={movie.data.id} />
-export function AddToWatchlist({ movieId }) {
+// Movie page: <AddToWatchlist movieId={movie.data.id} />
+// TMDB movie page: <AddToWatchlist tmdbId={123} navigate={navigate} backPath="/tmdb/123" />
+// (the server imports the movie; afterwards it has its own /movies/:id page with reviews).
+export function AddToWatchlist({ movieId, tmdbId, navigate, backPath }) {
   const { user, logout } = useAuth();
-  const [lists, setLists] = useState([]);
+  const [lists, setLists] = useState(null);
   const [selected, setSelected] = useState("");
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [localId, setLocalId] = useState(null);
 
   useEffect(() => {
-    if (user) api.getLists().then(setLists).catch((err) => { if (err.status === 401) logout(); });
+    if (user) api.getLists().then(setLists).catch((err) => { setLists([]); if (err.status === 401) logout(); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  if (!user || lists.length === 0) return null;
+  const external = tmdbId != null;
+  if (!user) {
+    if (!external || !navigate) return null;
+    return (
+      <p className="wl-add__msg">
+        <Link href={loginPathFor(backPath)} navigate={navigate}>Kirjaudu sisään</Link>, niin voit lisätä
+        elokuvan omalle listallesi.
+      </p>
+    );
+  }
+  if (lists === null) return null;
+  if (lists.length === 0) {
+    if (!external || !navigate) return null;
+    return (
+      <p className="wl-add__msg">
+        Sinulla ei ole vielä listoja. <Link href="/watchlists" navigate={navigate}>Luo lista</Link>, niin voit
+        lisätä elokuvan sille.
+      </p>
+    );
+  }
 
   const onAdd = async () => {
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
     try {
-      await api.addMovie(selected, movieId);
+      if (external) {
+        const result = await api.addTmdbMovie(selected, tmdbId);
+        setLocalId(result.movie_id);
+      } else {
+        await api.addMovie(selected, movieId);
+      }
       setMessage("Lisätty listalle!");
     } catch (err) {
       if (err.status === 401) logout();
-      else setMessage(err.message);
+      else {
+        if (err.movieId) setLocalId(err.movieId);
+        setMessage(err.message);
+      }
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -238,10 +274,16 @@ export function AddToWatchlist({ movieId }) {
         <option value="">Valitse lista…</option>
         {lists.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
       </select>
-      <button type="button" className="button button--secondary" disabled={!selected} onClick={onAdd}>
-        Lisää listalle
+      <button type="button" className="button button--secondary" disabled={!selected || busy} onClick={onAdd}>
+        {busy ? "Lisätään…" : "Lisää listalle"}
       </button>
       {message && <p className="wl-add__msg" role="status">{message}</p>}
+      {external && localId && navigate && (
+        <p className="wl-add__msg">
+          Elokuva on nyt valikoimassamme.{" "}
+          <Link href={`/movies/${localId}`} navigate={navigate}>Avaa elokuvan sivu ja arvostelut →</Link>
+        </p>
+      )}
     </div>
   );
 }

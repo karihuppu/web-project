@@ -87,4 +87,11 @@ const movieExists = async (id) => {
   return result.rowCount > 0
 }
 
-export { SORTS, getMovies, getMovieById, getMovieReviews, movieExists }
+// tmdb_id -> movies.id for the given TMDB ids that are already in our database.
+const localIdsByTmdbIds = async (tmdbIds) => {
+  if (!tmdbIds.length) return new Map()
+  const result = await pool.query('SELECT id, tmdb_id FROM movies WHERE tmdb_id = ANY($1::int[])', [tmdbIds])
+  return new Map(result.rows.map((row) => [row.tmdb_id, row.id]))
+}
+
+export { SORTS, getMovies, getMovieById, getMovieReviews, movieExists, localIdsByTmdbIds }
