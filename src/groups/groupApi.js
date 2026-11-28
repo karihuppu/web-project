@@ -58,3 +58,17 @@ export const approveJoinRequest = (id, requestId) =>
   send({ method: "POST", url: `/api/groups/${id}/requests/${requestId}/approve` });
 export const rejectJoinRequest = (id, requestId) =>
   send({ method: "POST", url: `/api/groups/${id}/requests/${requestId}/reject` });
+
+// Sharing own watchlists to groups (migration 005)
+export const fetchShares = (listId) =>
+  send({ method: "GET", url: `/api/watchlists/${listId}/shares` }).then((d) => d.shares);
+export const shareWatchlist = (listId, groupId) =>
+  send({ method: "POST", url: `/api/watchlists/${listId}/shares`, data: { group_id: groupId } });
+export const unshareWatchlist = (listId, groupId) =>
+  send({ method: "DELETE", url: `/api/watchlists/${listId}/shares/${groupId}` });
+export const fetchGroupWatchlists = (groupId) =>
+  send({ method: "GET", url: `/api/groups/${groupId}/watchlists` }).then((d) => d.watchlists);
+export const fetchGroupWatchlist = (groupId, listId) =>
+  send({ method: "GET", url: `/api/groups/${groupId}/watchlists/${listId}` }).then((d) => d.watchlist);
+export const copyGroupWatchlist = (groupId, listId) =>
+  send({ method: "POST", url: `/api/groups/${groupId}/watchlists/${listId}/copy` }).then((d) => d.watchlist);

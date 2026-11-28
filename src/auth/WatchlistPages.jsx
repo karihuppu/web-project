@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth, loginPathFor } from "./useAuth";
 import * as api from "./watchlists";
 import "./watchlist.css";
+import { ShareListPanel } from "../groups/ListSharing";
 
 function Link({ href, navigate, children, ...props }) {
   return (
@@ -201,6 +202,7 @@ export function WatchlistPage({ id, navigate }) {
           ))}
         </ul>
       )}
+      <ShareListPanel watchlistId={id} navigate={navigate} />
     </section>
   );
 }
