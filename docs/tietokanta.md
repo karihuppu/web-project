@@ -321,6 +321,26 @@ Remove-Item Env:TMDB_READ_TOKEN
 Tyhjät kuvaukset näkee etukäteen kyselyllä:
 `SELECT id, tmdb_id, title FROM movies WHERE overview IS NULL OR btrim(overview) = '' ORDER BY id;`
 
+#### Vain TMDB-arviot: `--ratings-only`
+
+Päivittää **jo tietokannassa olevien** elokuvien (`tmdb_id`) kentät `tmdb_vote_average` ja `tmdb_vote_count`.
+Julisteisiin ja kuvauksiin ei kosketa, uusia elokuvia ei lisätä. Toimii yhdessä `--dry-run`-, `--only`- ja `--confirm`-valintojen kanssa.
+
+- Arvot tarkistetaan samoilla säännöillä kuin uutta elokuvaa tuotaessa (`api/services/tmdbValues.js`):
+  keskiarvo luku 0–10 pyöristettynä yhteen desimaaliin, äänimäärä kokonaisluku ≥ 0.
+- Molempien arvojen on oltava kelvollisia. Jos TMDB palauttaa virheen (HTTP-virhe, aikakatkaisu, 404) tai
+  kelvottoman/puuttuvan arvon, elokuvan **molemmat vanhat arvot säilyvät** ja rivi lasketaan virheeksi.
+  Hylätty token (401) keskeyttää ajon heti ennen kirjoituksia.
+- Jokaisesta elokuvasta tulostetaan vanhat ja uudet arvot, myös `--dry-run`-ajossa, esim.
+  `would set  #4 "Inception" (tmdb 27205): 8.3 / 30000 votes -> 8.4 / 37412 votes`.
+- `tmdb_synced_at` ja `updated_at` päivittyvät vain, kun arvot muuttuvat. Uusi ajo ilman muutoksia ei kirjoita mitään.
+
+```powershell
+npm run tmdb:sync-movie-details -- --ratings-only --dry-run                    # vanhat ja uudet arvot, ei kirjoita
+npm run tmdb:sync-movie-details -- --ratings-only --dry-run --only=603,27205   # vain nämä TMDB-id:t
+npm run tmdb:sync-movie-details -- --ratings-only --confirm=cinema_db          # kirjoittaa Azureen
+```
+
 ## 6. Demodata
 
 `demo_seed.sql` lisää 9 genreä, 6 elokuvaa (oikeat TMDB-tunnisteet), 3 demokäyttäjää

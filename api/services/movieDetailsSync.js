@@ -9,6 +9,8 @@
 //     an existing text (e.g. our short Finnish description) is never overwritten;
 //   * any TMDB error (timeout, HTTP error, empty response) keeps the current data of that movie.
 
+import { voteAverage, voteCount } from './tmdbValues.js'
+
 export const VALID_POSTER_PATH = /^\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/i
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '')
@@ -102,6 +104,88 @@ export const syncMovieDetails = async ({ db, tmdb, dryRun = false, onlyTmdbIds =
     }
     summary.updated += 1
     log(`  ${dryRun ? 'would set ' : 'updated   '} ${label}: ${parts.join('; ')}`)
+  }
+
+  return summary
+}
+
+// --ratings-only: refreshes tmdb_vote_average and tmdb_vote_count of movies already in our database.
+//
+// Rules:
+//   * only existing movies (matched by tmdb_id); nothing else is read or written;
+//   * the values are validated with the same rules as the import of new movies (tmdbValues.js);
+//   * both values must be valid: an invalid or missing value keeps BOTH old values, so an average
+//     never ends up next to a vote count from another moment;
+//   * any TMDB error keeps the current data; a rejected token (401) stops the run at once;
+//   * every line shows the old and the new values (also in --dry-run).
+const showAverage = (value) => (value === null ? 'null' : Number(value).toFixed(1))
+const showRatings = (average, count) => `${showAverage(average)} / ${count === null ? 'null' : count} votes`
+
+export const syncMovieRatings = async ({ db, tmdb, dryRun = false, onlyTmdbIds = null, log = console.log }) => {
+  const params = []
+  let where = ''
+  if (onlyTmdbIds?.length) {
+    params.push(onlyTmdbIds)
+    where = 'WHERE tmdb_id = ANY($1::int[])'
+  }
+  // NUMERIC as float8: pg returns NUMERIC as a string.
+  const { rows: movies } = await db.query(
+    `SELECT id, tmdb_id, title, tmdb_vote_average::float8 AS tmdb_vote_average, tmdb_vote_count
+     FROM movies ${where} ORDER BY id`,
+    params,
+  )
+
+  const summary = { checked: 0, updated: 0, unchanged: 0, errors: 0 }
+
+  for (const movie of movies) {
+    summary.checked += 1
+    const label = `#${movie.id} "${movie.title}" (tmdb ${movie.tmdb_id})`
+    const old = showRatings(movie.tmdb_vote_average, movie.tmdb_vote_count)
+
+    let data
+    try {
+      data = await tmdb.getMovie(movie.tmdb_id, 'fi-FI')
+    } catch (error) {
+      if (error.kind === 'unauthorized') throw error
+      summary.errors += 1
+      log(`  ERROR      ${label}: ${error.message}; kept ${old}`)
+      continue
+    }
+
+    const average = voteAverage(data.vote_average)
+    const count = voteCount(data.vote_count)
+    if (average === null || count === null) {
+      summary.errors += 1
+      log(
+        `  ERROR      ${label}: invalid ratings from TMDB ` +
+        `(vote_average=${JSON.stringify(data.vote_average)}, vote_count=${JSON.stringify(data.vote_count)}); kept ${old}`,
+      )
+      continue
+    }
+
+    const next = showRatings(average, count)
+    if (movie.tmdb_vote_average === average && movie.tmdb_vote_count === count) {
+      summary.unchanged += 1
+      log(`  unchanged  ${label}: ${old}`)
+      continue
+    }
+
+    if (!dryRun) {
+      try {
+        await db.query(
+          `UPDATE movies
+           SET tmdb_vote_average = $2, tmdb_vote_count = $3, tmdb_synced_at = now(), updated_at = now()
+           WHERE id = $1`,
+          [movie.id, average, count],
+        )
+      } catch (error) {
+        summary.errors += 1
+        log(`  ERROR      ${label}: database update failed (${error.code ?? error.message}); kept ${old}`)
+        continue
+      }
+    }
+    summary.updated += 1
+    log(`  ${dryRun ? 'would set ' : 'updated   '} ${label}: ${old} -> ${next}`)
   }
 
   return summary
